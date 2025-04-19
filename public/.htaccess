@@ -1,0 +1,52 @@
+# Habilitar el motor de reescritura
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Redirigir a HTTPS (descomentar en producción)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # Permitir que PHP maneje los archivos
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Configuración de PHP
+<IfModule mod_php7.c>
+    php_flag display_errors On
+    php_value error_reporting E_ALL
+</IfModule>
+
+<IfModule mod_php8.c>
+    php_flag display_errors On
+    php_value error_reporting E_ALL
+</IfModule>
+
+# Permitir acceso a archivos y directorios
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+# Configuración de tipos MIME
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType text/css .css
+</IfModule>
+
+# Comprimir archivos para mejorar rendimiento
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Caché para archivos estáticos
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
