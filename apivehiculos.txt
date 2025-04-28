@@ -1,0 +1,478 @@
+Configuración	Valor
+Método	GET (o el correcto)
+URL	http://161.132.50.106:3001/vehiculo/despachos
+Header Key	x-api-key
+Header Value	JYc6Dqs{bBg!HtWLFmPN9SjKCh#7a24M
+
+
+
+[
+    {
+        "placa": "TST-123",
+        "padron": "090",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-27 19:35:58"
+    },
+    {
+        "placa": "AZZ-900",
+        "padron": "073",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-27 18:51:34"
+    },
+    {
+        "placa": "A5D741",
+        "padron": "066",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-26 20:25:55"
+    },
+    {
+        "placa": "F2G574",
+        "padron": "044",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-26 20:05:24"
+    },
+    {
+        "placa": "D7L716",
+        "padron": "032",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-26 20:04:43"
+    },
+    {
+        "placa": "A1F762",
+        "padron": "029",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-26 20:04:35"
+    },
+    {
+        "placa": "D7T728",
+        "padron": "022",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 16:39:27"
+    },
+    {
+        "placa": "D7L851",
+        "padron": "023",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 16:16:42"
+    },
+    {
+        "placa": "A4J760",
+        "padron": "045",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:53:50"
+    },
+    {
+        "placa": "D7S727",
+        "padron": "009",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:50:36"
+    },
+    {
+        "placa": "AUO791",
+        "padron": "061",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:46:53"
+    },
+    {
+        "placa": "F3N027",
+        "padron": "018",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:46:06"
+    },
+    {
+        "placa": "ATL900",
+        "padron": "007",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:45:27"
+    },
+    {
+        "placa": "BOA-746",
+        "padron": "075",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:44:54"
+    },
+    {
+        "placa": "BYU302",
+        "padron": "058",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:44:19"
+    },
+    {
+        "placa": "AUH-936",
+        "padron": "070",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:43:52"
+    },
+    {
+        "placa": "B9R771",
+        "padron": "030",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:41:41"
+    },
+    {
+        "placa": "B4T-956",
+        "padron": "069",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:40:14"
+    },
+    {
+        "placa": "A8U-760",
+        "padron": "063",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:39:55"
+    },
+    {
+        "placa": "AZS716",
+        "padron": "072",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 15:39:28"
+    },
+    {
+        "placa": "D7S778",
+        "padron": "001",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:34:19"
+    },
+    {
+        "placa": "D7K923",
+        "padron": "024",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:33:15"
+    },
+    {
+        "placa": "D7T727",
+        "padron": "010",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:25:00"
+    },
+    {
+        "placa": "AFK-900",
+        "padron": "054",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:13:29"
+    },
+    {
+        "placa": "ASA817",
+        "padron": "033",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:12:36"
+    },
+    {
+        "placa": "B3F-784",
+        "padron": "053",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:11:18"
+    },
+    {
+        "placa": "AVA-706",
+        "padron": "038",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 15:09:36"
+    },
+    {
+        "placa": " CMM-311",
+        "padron": "074",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:57:49"
+    },
+    {
+        "placa": "B2P-700",
+        "padron": "039",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:37:08"
+    },
+    {
+        "placa": "B3R780",
+        "padron": "046",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:36:16"
+    },
+    {
+        "placa": "A1C791",
+        "padron": "026",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:24:14"
+    },
+    {
+        "placa": "B3E-755",
+        "padron": "035",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:20:47"
+    },
+    {
+        "placa": "B3W-708",
+        "padron": "051",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:05:58"
+    },
+    {
+        "placa": "AJI809",
+        "padron": "027",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 14:03:03"
+    },
+    {
+        "placa": "A6W705",
+        "padron": "048",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 13:49:27"
+    },
+    {
+        "placa": "BSF070",
+        "padron": "067",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 13:48:26"
+    },
+    {
+        "placa": "A4I737",
+        "padron": "019",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 13:45:04"
+    },
+    {
+        "placa": "A3V707",
+        "padron": "031",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 13:13:15"
+    },
+    {
+        "placa": "D7L717",
+        "padron": "004",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 13:12:43"
+    },
+    {
+        "placa": "CKM105",
+        "padron": "071",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 13:08:53"
+    },
+    {
+        "placa": "F6R917",
+        "padron": "013",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 13:05:14"
+    },
+    {
+        "placa": "B3W-709",
+        "padron": "011",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 12:53:02"
+    },
+    {
+        "placa": "A7N-765",
+        "padron": "056",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 12:43:54"
+    },
+    {
+        "placa": "C2T729",
+        "padron": "055",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 12:37:50"
+    },
+    {
+        "placa": "BZZ545",
+        "padron": "003",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 12:28:52"
+    },
+    {
+        "placa": "D7R872",
+        "padron": "025",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 12:23:08"
+    },
+    {
+        "placa": "D7L715",
+        "padron": "005",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 12:22:23"
+    },
+    {
+        "placa": "B1U707",
+        "padron": "057",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 11:18:45"
+    },
+    {
+        "placa": "A4P726",
+        "padron": "059",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 11:17:35"
+    },
+    {
+        "placa": "A6Q782",
+        "padron": "052",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 10:57:37"
+    },
+    {
+        "placa": "AVU706",
+        "padron": "006",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 10:25:19"
+    },
+    {
+        "placa": "D5G595",
+        "padron": "068",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 10:20:14"
+    },
+    {
+        "placa": "BCM784",
+        "padron": "016",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 09:44:54"
+    },
+    {
+        "placa": "AXD834",
+        "padron": "064",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 09:23:17"
+    },
+    {
+        "placa": "D7L932",
+        "padron": "020",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 09:19:37"
+    },
+    {
+        "placa": "A5G702",
+        "padron": "049",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-25 08:14:25"
+    },
+    {
+        "placa": "BDL780",
+        "padron": "062",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 07:16:46"
+    },
+    {
+        "placa": "A6A-728",
+        "padron": "060",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-25 05:23:05"
+    },
+    {
+        "placa": "AHH878",
+        "padron": "034",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 13:39:42"
+    },
+    {
+        "placa": "A4P794",
+        "padron": "047",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 12:54:31"
+    },
+    {
+        "placa": "A2E775",
+        "padron": "050",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-24 11:56:32"
+    },
+    {
+        "placa": "AYX855",
+        "padron": "008",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 11:55:36"
+    },
+    {
+        "placa": "B3R781",
+        "padron": "021",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 10:42:16"
+    },
+    {
+        "placa": "D2J-707",
+        "padron": "041",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 10:41:04"
+    },
+    {
+        "placa": "F1D778",
+        "padron": "028",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 09:59:32"
+    },
+    {
+        "placa": "F8I-730",
+        "padron": "037",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 06:34:04"
+    },
+    {
+        "placa": "A9N809",
+        "padron": "042",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-24 06:24:58"
+    },
+    {
+        "placa": "AAR-829",
+        "padron": "076",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-23 14:06:41"
+    },
+    {
+        "placa": "D7M781",
+        "padron": "012",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-22 16:35:47"
+    },
+    {
+        "placa": "P2A552",
+        "padron": "040",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-22 08:28:51"
+    },
+    {
+        "placa": "D7K928",
+        "padron": "036",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-21 16:05:50"
+    },
+    {
+        "placa": "D7L931",
+        "padron": "002",
+        "terminal": "A",
+        "ultimo_despacho": "2025-04-20 22:00:50"
+    },
+    {
+        "placa": "B3V753",
+        "padron": "017",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-11 10:27:17"
+    },
+    {
+        "placa": "ATM-889",
+        "padron": "065",
+        "terminal": "B",
+        "ultimo_despacho": "2025-04-07 05:26:06"
+    },
+    {
+        "placa": "D7L860",
+        "padron": "015",
+        "terminal": "A",
+        "ultimo_despacho": "2025-02-27 13:57:51"
+    },
+    {
+        "placa": "AJL901",
+        "padron": "043",
+        "terminal": "B",
+        "ultimo_despacho": "2025-02-21 09:25:01"
+    },
+    {
+        "placa": "D7M701",
+        "padron": "014",
+        "terminal": "B",
+        "ultimo_despacho": "2025-01-24 09:10:10"
+    },
+    {
+        "placa": "RTY-896",
+        "padron": "080",
+        "terminal": "",
+        "ultimo_despacho": ""
+    }
+]                                                                                                                                                                                                                                                                                                                                                                           

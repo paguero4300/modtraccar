@@ -1,7 +1,28 @@
 <?php
 /**
  * Archivo de diagnóstico para solucionar problemas
+ * SOLO PARA ADMINISTRADORES
  */
+
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Verificar autenticación
+if (!isset($_SESSION['user']) || !isset($_SESSION['JSESSIONID'])) {
+    header('Location: index.php');
+    exit;
+}
+
+// Verificar si el usuario es administrador
+if (!isset($_SESSION['user']['administrator']) || $_SESSION['user']['administrator'] !== true) {
+    header('Location: index.php');
+    exit;
+}
+
+// Incluir configuración
+require_once __DIR__ . '/../config.php';
 
 // Mostrar todos los errores
 ini_set('display_errors', 1);
@@ -87,14 +108,14 @@ echo "<h2>Verificación de conexión a la API de Traccar</h2>";
 try {
     require_once '../config.php';
     echo "<p>URL de la API: " . TRACCAR_API_URL . "</p>";
-    
+
     $ch = curl_init(TRACCAR_API_URL . '/server');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
+
     echo "<p>Código de respuesta: $httpCode</p>";
     if ($httpCode >= 200 && $httpCode < 300) {
         echo "<p style='color:green'>Conexión exitosa</p>";

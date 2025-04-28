@@ -2,11 +2,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    
+
     # Redirigir a HTTPS (descomentar en producción)
     # RewriteCond %{HTTPS} off
     # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-    
+
     # Permitir que PHP maneje los archivos
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
@@ -28,6 +28,26 @@
 <IfModule mod_authz_core.c>
     Require all granted
 </IfModule>
+
+# Proteger archivos de prueba
+<Files ~ "^test_.*\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Deny from all
+    </IfModule>
+</Files>
+
+# Permitir acceso a archivos de prueba solo desde localhost
+<Files ~ "^test_.*\.php$">
+    <IfModule mod_authz_core.c>
+        Require local
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Allow from 127.0.0.1 ::1
+    </IfModule>
+</Files>
 
 # Configuración de tipos MIME
 <IfModule mod_mime.c>

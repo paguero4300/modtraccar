@@ -3,10 +3,19 @@
  * Página principal con mapa
  */
 
-require_once __DIR__ . '/../config.php';
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Verificar autenticación
-requireAuth();
+if (!isset($_SESSION['user']) || !isset($_SESSION['JSESSIONID'])) {
+    header('Location: index.php');
+    exit;
+}
+
+// Incluir configuración
+require_once __DIR__ . '/../config.php';
 
 // Obtener datos del usuario
 $user = $_SESSION['user'];
@@ -500,8 +509,7 @@ $user = $_SESSION['user'];
                     <div id="vehicles-list" class="space-y-2">
                         <!-- Lista de vehículos (se llena dinámicamente) -->
                         <div class="skeleton h-12 w-full"></div>
-                        <div class="skeleton h-12 w-full"></div>
-                        <div class="skeleton h-12 w-full"></div>
+                       
                     </div>
                 </div>
             </div>
@@ -517,31 +525,14 @@ $user = $_SESSION['user'];
                 <div class="p-3">
                     <div class="flex justify-between items-center mb-2">
                         <h2 class="text-base font-bold flex items-center gap-1" id="panel-vehicle-name">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-primary">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                            </svg>
+                    
                             <span id="vehicle-name-text">Detalles del vehículo</span>
                         </h2>
-                        <button id="close-details-panel" class="btn btn-xs btn-circle btn-ghost hover:bg-base-300">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                       
                     </div>
                     <div id="panel-vehicle-details" class="grid grid-cols-3 gap-3 mb-2">
                         <!-- Detalles del vehículo (se llena dinámicamente) -->
                         <div class="skeleton h-16 w-full"></div>
-                        <div class="skeleton h-16 w-full"></div>
-                        <div class="skeleton h-16 w-full"></div>
-                    </div>
-                    <div class="flex justify-end gap-2">
-
-                        <button class="btn btn-xs btn-warning gap-1" id="btn-engine-stop-panel">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
-                            </svg>
-                            Enviar comando
-                        </button>
                     </div>
                 </div>
             </div>

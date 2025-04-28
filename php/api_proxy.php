@@ -85,8 +85,164 @@ class TraccarAPI {
      *
      * @return array|false Lista de dispositivos o false si falla
      */
+    /**
+     * Obtiene los datos de los vehículos desde la API externa.
+     *
+     * @return array|false Datos de los vehículos externos o false si falla
+     */
+    private function getExternalVehicleData() {
+        // Detalles de la API externa (podrían leerse de apivehiculos.txt dinámicamente)
+        $externalApiUrl = 'http://161.132.50.106:3001/vehiculo/despachos';
+        $apiKey = 'JYc6Dqs{bBg!HtWLFmPN9SjKCh#7a24M';
+        $apiKeyHeader = 'x-api-key';
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $externalApiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            $apiKeyHeader . ': ' . $apiKey,
+            'Accept: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Timeout de 10 segundos
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            error_log("[ERROR] TraccarAPI::getExternalVehicleData - Error cURL: " . $error);
+            return false;
+        }
+
+
+        error_log("NO CARGA");
+
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            $data = json_decode($response, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $data;
+            } else {
+                error_log("[ERROR] TraccarAPI::getExternalVehicleData - Error decodificando JSON: " . json_last_error_msg());
+                error_log("[ERROR] TraccarAPI::getExternalVehicleData - Respuesta recibida: " . $response);
+                return false;
+            }
+        } else {
+            error_log("[ERROR] TraccarAPI::getExternalVehicleData - Error HTTP: " . $httpCode);
+            error_log("[ERROR] TraccarAPI::getExternalVehicleData - Respuesta recibida: " . $response);
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene los dispositivos del usuario combinados con datos externos.
+     *
+     * @return array|false Lista de dispositivos combinados o false si falla
+     */
     public function getDevices() {
-        return $this->request('GET', '/devices');
+        $logFile = __DIR__ . "/traccar_devices.log";
+        // 1. Obtener dispositivos de Traccar
+        $traccarDevices = $this->request('GET', '/devices');
+        if ($traccarDevices === false || !is_array($traccarDevices)) {
+            error_log("[ERROR] TraccarAPI::getDevices - No se pudieron obtener los dispositivos de Traccar.");
+            //return $traccarDevices; // Devolver el error original o false
+        }
+        
+       
+       //file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::getDevices: " . json_encode($traccarDevices) . PHP_EOL, FILE_APPEND);
+
+        // 2. Obtener datos de la API externa
+        $externalData = $this->getExternalVehicleData();
+        if ($externalData === false || !is_array($externalData)) {
+            error_log("[WARN] TraccarAPI::getDevices - No se pudieron obtener datos de la API externa o están vacíos. Devolviendo solo datos de Traccar.");
+            // Si falla la API externa, devolvemos solo los de Traccar para no romper la funcionalidad
+            //return $traccarDevices;
+        }
+
+        //file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::externalData: " . json_encode($externalData) . PHP_EOL, FILE_APPEND);
+
+
+        // 3. Crear un mapa de búsqueda para los datos externos usando 'placa' como clave
+        $externalDataMap = [];
+        foreach ($externalData as $vehicle) {
+            if (isset($vehicle['padron'])) {
+                // Normalizar la placa (quitar espacios, convertir a mayúsculas) para mejorar la coincidencia
+                $normalizedPlaca = strtoupper(trim($vehicle['padron']));
+                $externalDataMap[$normalizedPlaca] = $vehicle;
+            }
+        }
+
+        // 4. Combinar los datos
+        $combinedDevices = [];
+        foreach ($traccarDevices as $device) {
+            $matched = false;
+            // Intentar coincidir por uniqueId (IMEI/Identificador) o name (Nombre del dispositivo)
+            // Asumimos que uno de estos campos contiene la placa
+            $possibleKeys = [];
+         
+            if (isset($device['name'])) {
+                // Manejo de caracteres escapados en JSON - el / se debe tratar como /
+                $cleanName = str_replace('\/', '/', trim($device['name']));
+                $nameParts = explode('/', $cleanName);
+                $possibleKeys[] = strtoupper(trim($nameParts[0]));
+            }
+
+
+            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::nameParts: " . json_encode($nameParts[0]) . PHP_EOL, FILE_APPEND);
+            
+            // Debuggear la búsqueda de coincidencias
+            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::possibleKey: " . json_encode($possibleKeys[0]) . PHP_EOL, FILE_APPEND);
+            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::keyExists: " . json_encode(isset($externalDataMap[$possibleKeys[0]])) . PHP_EOL, FILE_APPEND);
+            
+            // Imprimir las claves en el mapa para depuración
+            if ($nameParts[0] == '042') {
+                file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::externalMapKeys: " . json_encode(array_keys($externalDataMap)) . PHP_EOL, FILE_APPEND);
+            }
+
+            foreach ($possibleKeys as $key) {
+                if (isset($externalDataMap[$key])) {
+                    // Verificar si attributes es un array
+                    if (!isset($device['attributes']) || !is_array($device['attributes'])) {
+                        $device['attributes'] = [];
+                        file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::creatingAttributes: " . $key . PHP_EOL, FILE_APPEND);
+                    }
+                    
+                    // Añadir los campos extra al dispositivo de Traccar
+                    $device['attributes']['padron'] = $externalDataMap[$key]['padron'] ?? null;
+                    $device['attributes']['terminal'] = $externalDataMap[$key]['terminal'] ?? null;
+                    $device['attributes']['ultimo_despacho'] = $externalDataMap[$key]['ultimo_despacho'] ?? null;
+                    
+                    // Copiar los valores también a la raíz del objeto para compatibilidad con el frontend
+                    $device['padron'] = $externalDataMap[$key]['padron'] ?? null;
+                    $device['terminal'] = $externalDataMap[$key]['terminal'] ?? null;
+                    $device['ultimo_despacho'] = $externalDataMap[$key]['ultimo_despacho'] ?? null;
+                    
+                    // Logear la asignación
+                    file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::matchedDevice: " . $key . 
+                        " - Padron: " . ($device['attributes']['padron'] ?? 'null') . PHP_EOL, FILE_APPEND);
+                    
+                    $matched = true;
+                    break; // Salir del bucle de claves si se encuentra una coincidencia
+                }
+            }
+
+            // Si no hubo coincidencia, añadir atributos vacíos o predeterminados si es necesario
+            if (!$matched) {
+                 $device['attributes']['padron'] = null;
+                 $device['attributes']['terminal'] = null;
+                 $device['attributes']['ultimo_despacho'] = null;
+                 
+                 // Copiar los valores nulos también a la raíz del objeto
+                 $device['padron'] = null;
+                 $device['terminal'] = null;
+                 $device['ultimo_despacho'] = null;
+            }
+
+            $combinedDevices[] = $device;
+        }
+
+        return $combinedDevices;
     }
 
     /**

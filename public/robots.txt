@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /test_*
+Disallow: /debug.php
+Disallow: /temp/

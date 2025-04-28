@@ -3,38 +3,20 @@
  * Vista independiente para visualizar rutas de vehículos
  */
 
-// Incluir archivos necesarios
-require_once __DIR__ . '/../config.php';
-
-// Definir constantes si no existen
-if (!defined('CSRF_TOKEN_NAME')) {
-    define('CSRF_TOKEN_NAME', 'csrf_token');
+// Iniciar sesión si no está iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-
-// Funciones de autenticación
-function checkAuth($redirect = true) {
-    // Iniciar sesión si no está activa
-    if (session_status() == PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    // Verificar si existe la cookie de sesión
-    if (!isset($_SESSION['JSESSIONID'])) {
-        if ($redirect) {
-            // Redirigir a la página de login
-            header('Location: login.php');
-            exit;
-        }
-        return false;
-    }
-
-    return true;
-}
-
-require_once __DIR__ . '/../php/api_proxy.php';
 
 // Verificar autenticación
-checkAuth();
+if (!isset($_SESSION['user']) || !isset($_SESSION['JSESSIONID'])) {
+    header('Location: index.php');
+    exit;
+}
+
+// Incluir archivos necesarios
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../php/api_proxy.php';
 
 // Obtener dispositivos
 $api = new TraccarAPI($_SESSION['JSESSIONID']);

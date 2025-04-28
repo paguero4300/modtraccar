@@ -71,9 +71,17 @@ function initMap() {
         window.isRouteMode = false;
         window.currentRouteDeviceId = null;
         window.routeBackButton = null;
+        
+        // Variables para las rutas
+        window.rutaIdaPolyline = null;
+        window.rutaVueltaPolyline = null;
+        window.rutasLegend = null;
 
         // Sincronizar tema del mapa con el tema de la aplicación
         syncMapTheme();
+        
+        // Cargar y mostrar las rutas
+        loadRoutes();
 
         console.log('Mapa inicializado correctamente');
 
@@ -326,6 +334,19 @@ function updateMarkerPopup(marker, device, position) {
                     </svg>
                     <span>${lastUpdate}</span>
                 </div>
+                <!-- Nuevos campos -->
+                <div class="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    <span>Terminal: ${device.terminal || 'N/A'}</span>
+                </div>
+                <div class="flex items-center gap-1 col-span-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Últ. Despacho: ${device.ultimo_despacho ? new Date(device.ultimo_despacho).toLocaleString() : 'N/A'}</span>
+                </div>
             </div>
         </div>
     `;
@@ -371,8 +392,276 @@ function updateMarkerPopup(marker, device, position) {
 }
 
 // Mostrar detalles del vehículo en el panel inferior
+// Función para cargar y mostrar las rutas desde el archivo rutas.json
+function loadRoutes() {
+    console.log('Iniciando carga de rutas...');
+    
+    // Limpiar rutas existentes
+    clearRoutes();
+    
+    // Obtener la URL base
+    const baseUrl = window.location.origin;
+    console.log('URL base:', baseUrl);
+    
+    // Intentar ubicaciones alternativas si la primera falla
+    const rutasUrls = [
+        '../rutas.json',
+        '/traccar/rutas.json',
+        baseUrl + '/traccar/rutas.json',
+        baseUrl + '/rutas.json',
+        './rutas.json',
+        '/rutas.json'
+    ];
+    
+    // Función para intentar cargar desde diferentes URLs
+    function tryLoadFromUrl(index) {
+        if (index >= rutasUrls.length) {
+            console.error('No se pudo cargar el archivo rutas.json desde ninguna ubicación');
+            alert('Error: No se pudieron cargar las rutas. Consulte la consola para más detalles.');
+            
+            // A pesar del error, añadir la leyenda vacía
+            addRoutesLegend();
+            return;
+        }
+        
+        const url = rutasUrls[index];
+        console.log(`Intentando cargar rutas desde: ${url}`);
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`No se pudo cargar el archivo de rutas desde ${url} (Status: ${response.status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos de rutas cargados correctamente');
+                
+                // Verificar si existen las rutas
+                if (data.ruta_ida && Array.isArray(data.ruta_ida) && data.ruta_ida.length > 0) {
+                    console.log(`Ruta de ida encontrada con ${data.ruta_ida.length} puntos`);
+                    console.log('Muestra de puntos de ida:', data.ruta_ida.slice(0, 3));
+                    displayRoute(data.ruta_ida, 'ida');
+                } else {
+                    console.warn('La ruta de ida no existe o está vacía en los datos cargados');
+                }
+                
+                if (data.ruta_vuelta && Array.isArray(data.ruta_vuelta) && data.ruta_vuelta.length > 0) {
+                    console.log(`Ruta de vuelta encontrada con ${data.ruta_vuelta.length} puntos`);
+                    console.log('Muestra de puntos de vuelta:', data.ruta_vuelta.slice(0, 3));
+                    displayRoute(data.ruta_vuelta, 'vuelta');
+                } else {
+                    console.warn('La ruta de vuelta no existe o está vacía');
+                    
+                    // Si no hay ruta de vuelta, asumimos que la ruta de ida es la única
+                    // y generamos una ruta de vuelta falsa para completar la leyenda
+                    if (data.ruta_ida && data.ruta_ida.length > 0) {
+                        window.rutaVueltaPolyline = { getLatLngs: () => [] };
+                    }
+                }
+                
+                // Añadir leyenda después de cargar ambas rutas
+                addRoutesLegend();
+            })
+            .catch(error => {
+                console.error(`Error al cargar las rutas desde ${url}:`, error);
+                // Intentar con la siguiente URL
+                tryLoadFromUrl(index + 1);
+            });
+    }
+    
+    // Comenzar con la primera URL
+    tryLoadFromUrl(0);
+}
+
+// Función para mostrar una ruta en el mapa
+function displayRoute(routeData, routeType) {
+    if (!routeData || routeData.length === 0) {
+        console.warn(`No hay datos para mostrar ruta de ${routeType}`);
+        return;
+    }
+    
+    console.log(`Mostrando ruta de ${routeType} con ${routeData.length} puntos`);
+    
+    // Validación y conversión de puntos
+    let validPoints = 0;
+    const routePoints = [];
+    
+    for (let i = 0; i < routeData.length; i++) {
+        const point = routeData[i];
+        
+        // Verificar que el punto tenga coordenadas válidas
+        if (point && typeof point.latitud === 'number' && !isNaN(point.latitud) && 
+            typeof point.longitud === 'number' && !isNaN(point.longitud)) {
+            
+            // Verificar rango de coordenadas válido
+            if (point.latitud >= -90 && point.latitud <= 90 && 
+                point.longitud >= -180 && point.longitud <= 180) {
+                
+                routePoints.push(L.latLng(point.latitud, point.longitud));
+                validPoints++;
+                
+                // Mostrar algunos puntos de muestra en la consola
+                if (i < 3 || i >= routeData.length - 3 || i % Math.floor(routeData.length / 5) === 0) {
+                    console.log(`Punto ${i}: [${point.latitud}, ${point.longitud}]`);
+                }
+            } else {
+                console.error(`Punto ${i} fuera de rango: [${point.latitud}, ${point.longitud}]`);
+            }
+        } else {
+            console.error(`Punto ${i} inválido:`, point);
+        }
+    }
+    
+    console.log(`Puntos válidos para ${routeType}: ${validPoints} de ${routeData.length}`);
+    
+    if (routePoints.length < 2) {
+        console.error(`No hay suficientes puntos válidos para crear la ruta de ${routeType}`);
+        return;
+    }
+    
+    // Definir opciones de estilo para la ruta
+    let routeOptions = {
+        weight: 5,
+        opacity: 0.7,
+        smoothFactor: 1
+    };
+    
+    // Asignar colores diferentes según el tipo de ruta
+    if (routeType === 'ida') {
+        routeOptions.color = '#3388ff'; // Azul para la ruta de ida
+        
+        // Crear la polilínea para la ruta de ida
+        window.rutaIdaPolyline = L.polyline(routePoints, routeOptions);
+        window.rutaIdaPolyline.addTo(map);
+        
+        // Agregar popup con información al hacer clic en la ruta
+        window.rutaIdaPolyline.bindPopup('Ruta de Ida');
+        
+        // Ajustar la vista del mapa para mostrar la ruta completa
+        console.log('Ajustando vista a ruta de ida');
+        try {
+            const bounds = window.rutaIdaPolyline.getBounds();
+            map.fitBounds(bounds, { padding: [50, 50] });
+            console.log('Vista ajustada a ruta de ida');
+        } catch (e) {
+            console.error('Error al ajustar vista a la ruta:', e);
+            // Intentar ajustar la vista a un punto específico si hay error
+            if (routePoints.length > 0) {
+                map.setView(routePoints[0], 13);
+                console.log('Vista ajustada al primer punto');
+            }
+        }
+    } else {
+        routeOptions.color = '#ff3333'; // Rojo para la ruta de vuelta
+        
+        // Crear la polilínea para la ruta de vuelta
+        window.rutaVueltaPolyline = L.polyline(routePoints, routeOptions);
+        window.rutaVueltaPolyline.addTo(map);
+        
+        // Agregar popup con información al hacer clic en la ruta
+        window.rutaVueltaPolyline.bindPopup('Ruta de Vuelta');
+        
+        console.log('Ruta de vuelta añadida al mapa');
+    }
+}
+
+// Función para limpiar las rutas existentes del mapa
+function clearRoutes() {
+    console.log('Limpiando rutas existentes...');
+    
+    // Eliminar polilínea de la ruta de ida si existe
+    if (window.rutaIdaPolyline) {
+        window.rutaIdaPolyline.remove();
+        window.rutaIdaPolyline = null;
+        console.log('Ruta de ida eliminada');
+    }
+    
+    // Eliminar polilínea de la ruta de vuelta si existe
+    if (window.rutaVueltaPolyline) {
+        window.rutaVueltaPolyline.remove();
+        window.rutaVueltaPolyline = null;
+        console.log('Ruta de vuelta eliminada');
+    }
+    
+    // Eliminar leyenda si existe
+    if (window.rutasLegend) {
+        window.rutasLegend.remove();
+        window.rutasLegend = null;
+        console.log('Leyenda eliminada');
+    }
+}
+
+// Función para añadir leyenda de rutas al mapa
+function addRoutesLegend() {
+    console.log('Añadiendo leyenda de rutas...');
+    
+    // Si ya existe una leyenda, eliminarla
+    if (window.rutasLegend) {
+        window.rutasLegend.remove();
+    }
+    
+    // Crear la leyenda como un control de Leaflet
+    window.rutasLegend = L.control({ position: 'bottomleft' });
+    
+    window.rutasLegend.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'legend-control');
+        div.innerHTML = '<h4 style="margin: 0 0 5px 0; font-weight: bold;">Leyenda de Rutas</h4>';
+        
+        // Añadir elemento para la ruta de ida
+        div.innerHTML += '<div style="display: flex; align-items: center; margin-bottom: 3px;"><div style="width: 20px; height: 3px; background-color: #3388ff; margin-right: 5px;"></div>Ruta de Ida</div>';
+        
+        // Añadir elemento para la ruta de vuelta
+        div.innerHTML += '<div style="display: flex; align-items: center;"><div style="width: 20px; height: 3px; background-color: #ff3333; margin-right: 5px;"></div>Ruta de Vuelta</div>';
+        
+        // Aplicar estilos CSS para que sea más visible y elegante
+        div.style.backgroundColor = 'white';
+        div.style.padding = '10px';
+        div.style.borderRadius = '8px';
+        div.style.boxShadow = '0 0 15px rgba(0, 0, 0, 0.2)';
+        div.style.lineHeight = '1.5';
+        div.style.fontFamily = 'Arial, sans-serif';
+        div.style.fontSize = '12px';
+        div.style.color = '#333';
+        div.style.minWidth = '150px';
+        div.style.maxWidth = '200px';
+        div.style.border = '1px solid rgba(0,0,0,0.1)';
+        
+        // Hacer que la leyenda sea interactiva (no pasar eventos al mapa)
+        L.DomEvent.disableClickPropagation(div);
+        L.DomEvent.disableScrollPropagation(div);
+        
+        return div;
+    };
+    
+    window.rutasLegend.addTo(map);
+}
+
+// Función para ocultar los detalles del vehículo
+function hideVehicleDetails() {
+    const panel = document.getElementById('vehicle-details-panel');
+    const additionalInfoPanel = document.getElementById('additional-info-panel');
+    
+    panel.classList.add('hidden');
+    if (additionalInfoPanel) {
+        additionalInfoPanel.classList.add('hidden');
+    }
+}
+
+// Función para crear el panel de información adicional
+function createAdditionalInfoPanel() {
+    let panel = document.getElementById('additional-info-panel');
+    if (!panel) {
+        panel = document.createElement('div');
+        document.body.appendChild(panel);
+    }
+    return panel;
+}
+
+// Función para mostrar detalles del vehículo en el panel inferior
 function showVehicleDetails(device, position) {
     const panel = document.getElementById('vehicle-details-panel');
+    const additionalInfoPanel = document.getElementById('additional-info-panel') || createAdditionalInfoPanel();
     const nameElement = document.getElementById('vehicle-name-text');
     const detailsElement = document.getElementById('panel-vehicle-details');
 
@@ -391,31 +680,36 @@ function showVehicleDetails(device, position) {
 
     const lastUpdate = new Date(position.deviceTime).toLocaleString();
 
+
+
+
     // Generar HTML de detalles agrupados por tipo de datos con títulos descriptivos
     detailsElement.innerHTML = `
         <!-- Grupo: Información de Movimiento -->
-        <div class="flex flex-col border rounded-lg p-2 bg-base-200">
+
+              <div class="flex flex-col border rounded-lg p-2 bg-base-200 mb-2">
             <div class="text-xs font-semibold mb-1 text-primary flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                 </svg>
-                <span>Movimiento</span>
+                <span>Información Despacho</span>
+            </div>
+            <div class="text-xs flex items-center gap-1 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
+                <span>Terminal:</span>
+                <span class="font-medium ml-1">${device.terminal || 'N/A'}</span>
             </div>
             <div class="text-xs flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.651a3.75 3.75 0 0 1 0-5.303m5.304 0a3.75 3.75 0 0 1 0 5.303m-7.425 2.122a6.75 6.75 0 0 1 0-9.546m9.546 0a6.75 6.75 0 0 1 0 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12Z" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                 </svg>
-                <span>Velocidad:</span>
-                <span class="font-medium">${speed} km/h</span>
-            </div>
-            <div class="text-xs flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M9 21h6a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 15 4.5H9a2.25 2.25 0 0 0-2.25 2.25v12A2.25 2.25 0 0 0 9 21Z" />
-                </svg>
-                <span>Dirección:</span>
-                <span class="font-medium">${position.course ? position.course.toFixed(1) + '°' : 'N/A'}</span>
+                <span>Últ. Despacho:</span>
+                <span class="font-medium ml-1">${device.ultimo_despacho ? new Date(device.ultimo_despacho).toLocaleString() : 'N/A'}</span>
             </div>
         </div>
+ 
 
         <!-- Grupo: Información de Tiempo -->
         <div class="flex flex-col border rounded-lg p-2 bg-base-200">
@@ -464,10 +758,15 @@ function showVehicleDetails(device, position) {
                 </button>
             </div>
         </div>
+
+
     `;
 
-    // Mostrar panel
+
+
+    // Mostrar paneles
     panel.classList.remove('hidden');
+    additionalInfoPanel.classList.remove('hidden');
 
     // Asegurarse de que el panel sea visible
     console.log('Mostrando panel de detalles para:', device.name);
