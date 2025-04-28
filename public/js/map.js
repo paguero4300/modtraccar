@@ -1,7 +1,7 @@
 // Inicializar el mapa
 function initMap() {
     try {
-        console.log('Inicializando mapa...');
+        /* console.log eliminado */('Inicializando mapa...');
 
         // Crear mapa
         window.map = L.map('map', {
@@ -83,7 +83,7 @@ function initMap() {
         // Cargar y mostrar las rutas
         loadRoutes();
 
-        console.log('Mapa inicializado correctamente');
+        /* console.log eliminado */('Mapa inicializado correctamente');
 
         // Iniciar WebSocket para actualizaciones en tiempo real
         if (typeof window.initWebSocket === 'function') {
@@ -98,14 +98,14 @@ function initMap() {
 
 // Cargar dispositivos desde la API
 function loadDevices() {
-    console.log('Cargando dispositivos...');
+    /* console.log eliminado */('Cargando dispositivos...');
 
     // Devolver una promesa para poder encadenar acciones
     return new Promise((resolve, reject) => {
         apiRequest('getDevices')
             .then(response => {
                 if (response.success) {
-                    console.log('Dispositivos cargados:', response.data.length);
+                    /* console.log eliminado */('Dispositivos cargados:', response.data.length);
                     updateDevices(response.data);
 
                     // Cargar posiciones después de obtener dispositivos
@@ -149,7 +149,7 @@ window.loadPositions = function() {
 
 // Actualizar dispositivos en el mapa
 function updateDevices(devices) {
-    console.log('Actualizando dispositivos:', devices.length);
+    /* console.log eliminado */('Actualizando dispositivos:', devices.length);
 
     // Actualizar datos globales
     window.deviceData = {};
@@ -167,7 +167,6 @@ function updateDevices(devices) {
 
     // Actualizar marcadores en el mapa
     devices.forEach(device => {
-        console.log('Procesando dispositivo:', device.id, device.name, 'Estado:', device.status, 'Posición:', device.lastPosition ? 'Sí' : 'No');
         if (device.lastPosition) {
             // Determinar si está en línea (menos de 5 minutos desde la última actualización)
             const isOnline = new Date() - new Date(device.lastPosition.deviceTime) < 5 * 60 * 1000;
@@ -191,29 +190,24 @@ function updateDevices(devices) {
 function updateDeviceMarker(device, position) {
     // Si ya existe un marcador para este dispositivo, actualizarlo
     if (markers[device.id]) {
-        updateExistingMarker(markers[device.id], device, position);
+        const marker = markers[device.id];
+        // Actualizar posición
+        marker.setLatLng([position.latitude, position.longitude]);
+        // Actualizar icono según estado
+        updateMarkerIcon(marker, device, position);
+        // Actualizar popup
+        updateMarkerPopup(marker, device, position);
+        // Si este es el dispositivo seleccionado, actualizar detalles
+        if (selectedDeviceId === device.id) {
+            showVehicleDetails(device, position);
+        }
     } else {
         // Si no existe, crear uno nuevo
         createMarker(device, position);
     }
 }
 
-// Actualizar un marcador existente
-function updateExistingMarker(marker, device, position) {
-    // Actualizar posición
-    marker.setLatLng([position.latitude, position.longitude]);
 
-    // Actualizar icono según estado
-    updateMarkerIcon(marker, device, position);
-
-    // Actualizar popup
-    updateMarkerPopup(marker, device, position);
-
-    // Si este es el dispositivo seleccionado, actualizar detalles
-    if (selectedDeviceId === device.id) {
-        showVehicleDetails(device, position);
-    }
-}
 
 // Crear un nuevo marcador
 function createMarker(device, position) {
@@ -394,84 +388,28 @@ function updateMarkerPopup(marker, device, position) {
 // Mostrar detalles del vehículo en el panel inferior
 // Función para cargar y mostrar las rutas desde el archivo rutas.json
 function loadRoutes() {
-    console.log('Iniciando carga de rutas...');
-    
-    // Limpiar rutas existentes
+    // KISS: Solo cargar desde la ubicación fija '/public/rutas.json'
     clearRoutes();
-    
-    // Obtener la URL base
-    const baseUrl = window.location.origin;
-    console.log('URL base:', baseUrl);
-    
-    // Intentar ubicaciones alternativas si la primera falla
-    const rutasUrls = [
-        '../rutas.json',
-        '/traccar/rutas.json',
-        baseUrl + '/traccar/rutas.json',
-        baseUrl + '/rutas.json',
-        './rutas.json',
-        '/rutas.json'
-    ];
-    
-    // Función para intentar cargar desde diferentes URLs
-    function tryLoadFromUrl(index) {
-        if (index >= rutasUrls.length) {
-            console.error('No se pudo cargar el archivo rutas.json desde ninguna ubicación');
-            alert('Error: No se pudieron cargar las rutas. Consulte la consola para más detalles.');
-            
-            // A pesar del error, añadir la leyenda vacía
+    fetch('rutas.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el archivo de rutas desde /public/rutas.json');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.ruta_ida) {
+                displayRoute(data.ruta_ida, 'ida');
+            }
+            if (data.ruta_vuelta) {
+                displayRoute(data.ruta_vuelta, 'vuelta');
+            }
             addRoutesLegend();
-            return;
-        }
-        
-        const url = rutasUrls[index];
-        console.log(`Intentando cargar rutas desde: ${url}`);
-        
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`No se pudo cargar el archivo de rutas desde ${url} (Status: ${response.status})`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Datos de rutas cargados correctamente');
-                
-                // Verificar si existen las rutas
-                if (data.ruta_ida && Array.isArray(data.ruta_ida) && data.ruta_ida.length > 0) {
-                    console.log(`Ruta de ida encontrada con ${data.ruta_ida.length} puntos`);
-                    console.log('Muestra de puntos de ida:', data.ruta_ida.slice(0, 3));
-                    displayRoute(data.ruta_ida, 'ida');
-                } else {
-                    console.warn('La ruta de ida no existe o está vacía en los datos cargados');
-                }
-                
-                if (data.ruta_vuelta && Array.isArray(data.ruta_vuelta) && data.ruta_vuelta.length > 0) {
-                    console.log(`Ruta de vuelta encontrada con ${data.ruta_vuelta.length} puntos`);
-                    console.log('Muestra de puntos de vuelta:', data.ruta_vuelta.slice(0, 3));
-                    displayRoute(data.ruta_vuelta, 'vuelta');
-                } else {
-                    console.warn('La ruta de vuelta no existe o está vacía');
-                    
-                    // Si no hay ruta de vuelta, asumimos que la ruta de ida es la única
-                    // y generamos una ruta de vuelta falsa para completar la leyenda
-                    if (data.ruta_ida && data.ruta_ida.length > 0) {
-                        window.rutaVueltaPolyline = { getLatLngs: () => [] };
-                    }
-                }
-                
-                // Añadir leyenda después de cargar ambas rutas
-                addRoutesLegend();
-            })
-            .catch(error => {
-                console.error(`Error al cargar las rutas desde ${url}:`, error);
-                // Intentar con la siguiente URL
-                tryLoadFromUrl(index + 1);
-            });
-    }
-    
-    // Comenzar con la primera URL
-    tryLoadFromUrl(0);
+        })
+        .catch(error => {
+            console.error('Error al cargar rutas:', error);
+            addRoutesLegend();
+        });
 }
 
 // Función para mostrar una ruta en el mapa
@@ -481,7 +419,7 @@ function displayRoute(routeData, routeType) {
         return;
     }
     
-    console.log(`Mostrando ruta de ${routeType} con ${routeData.length} puntos`);
+    /* console.log eliminado */(`Mostrando ruta de ${routeType} con ${routeData.length} puntos`);
     
     // Validación y conversión de puntos
     let validPoints = 0;
@@ -503,7 +441,7 @@ function displayRoute(routeData, routeType) {
                 
                 // Mostrar algunos puntos de muestra en la consola
                 if (i < 3 || i >= routeData.length - 3 || i % Math.floor(routeData.length / 5) === 0) {
-                    console.log(`Punto ${i}: [${point.latitud}, ${point.longitud}]`);
+                    /* console.log eliminado */(`Punto ${i}: [${point.latitud}, ${point.longitud}]`);
                 }
             } else {
                 console.error(`Punto ${i} fuera de rango: [${point.latitud}, ${point.longitud}]`);
@@ -513,7 +451,7 @@ function displayRoute(routeData, routeType) {
         }
     }
     
-    console.log(`Puntos válidos para ${routeType}: ${validPoints} de ${routeData.length}`);
+    /* console.log eliminado */(`Puntos válidos para ${routeType}: ${validPoints} de ${routeData.length}`);
     
     if (routePoints.length < 2) {
         console.error(`No hay suficientes puntos válidos para crear la ruta de ${routeType}`);
@@ -539,17 +477,17 @@ function displayRoute(routeData, routeType) {
         window.rutaIdaPolyline.bindPopup('Ruta de Ida');
         
         // Ajustar la vista del mapa para mostrar la ruta completa
-        console.log('Ajustando vista a ruta de ida');
+        /* console.log eliminado */('Ajustando vista a ruta de ida');
         try {
             const bounds = window.rutaIdaPolyline.getBounds();
             map.fitBounds(bounds, { padding: [50, 50] });
-            console.log('Vista ajustada a ruta de ida');
+            /* console.log eliminado */('Vista ajustada a ruta de ida');
         } catch (e) {
             console.error('Error al ajustar vista a la ruta:', e);
             // Intentar ajustar la vista a un punto específico si hay error
             if (routePoints.length > 0) {
                 map.setView(routePoints[0], 13);
-                console.log('Vista ajustada al primer punto');
+                /* console.log eliminado */('Vista ajustada al primer punto');
             }
         }
     } else {
@@ -562,39 +500,39 @@ function displayRoute(routeData, routeType) {
         // Agregar popup con información al hacer clic en la ruta
         window.rutaVueltaPolyline.bindPopup('Ruta de Vuelta');
         
-        console.log('Ruta de vuelta añadida al mapa');
+        /* console.log eliminado */('Ruta de vuelta añadida al mapa');
     }
 }
 
 // Función para limpiar las rutas existentes del mapa
 function clearRoutes() {
-    console.log('Limpiando rutas existentes...');
+    /* console.log eliminado */('Limpiando rutas existentes...');
     
     // Eliminar polilínea de la ruta de ida si existe
     if (window.rutaIdaPolyline) {
         window.rutaIdaPolyline.remove();
         window.rutaIdaPolyline = null;
-        console.log('Ruta de ida eliminada');
+        /* console.log eliminado */('Ruta de ida eliminada');
     }
     
     // Eliminar polilínea de la ruta de vuelta si existe
     if (window.rutaVueltaPolyline) {
         window.rutaVueltaPolyline.remove();
         window.rutaVueltaPolyline = null;
-        console.log('Ruta de vuelta eliminada');
+        /* console.log eliminado */('Ruta de vuelta eliminada');
     }
     
     // Eliminar leyenda si existe
     if (window.rutasLegend) {
         window.rutasLegend.remove();
         window.rutasLegend = null;
-        console.log('Leyenda eliminada');
+        /* console.log eliminado */('Leyenda eliminada');
     }
 }
 
 // Función para añadir leyenda de rutas al mapa
 function addRoutesLegend() {
-    console.log('Añadiendo leyenda de rutas completas y variadas...');
+    /* console.log eliminado */('Añadiendo leyenda de rutas completas y variadas...');
     
     // Si ya existe una leyenda, eliminarla
     if (window.rutasLegend) {
@@ -769,7 +707,7 @@ function showVehicleDetails(device, position) {
     additionalInfoPanel.classList.remove('hidden');
 
     // Asegurarse de que el panel sea visible
-    console.log('Mostrando panel de detalles para:', device.name);
+    /* console.log eliminado */('Mostrando panel de detalles para:', device.name);
 
     // Forzar un reflow para asegurar que la transición funcione
     void panel.offsetWidth;
@@ -817,26 +755,26 @@ function showVehicleDetails(device, position) {
 
 // Cargar ruta del dispositivo
 function loadDeviceRoute(deviceId) {
-    console.log(`[DEBUG] loadDeviceRoute - Iniciando carga de ruta para dispositivo ID: ${deviceId}`);
+    /* console.log eliminado */(`[DEBUG] loadDeviceRoute - Iniciando carga de ruta para dispositivo ID: ${deviceId}`);
 
     // Verificar que el dispositivo existe en los datos
     if (!window.deviceData || !window.deviceData[deviceId]) {
         console.error(`[DEBUG] loadDeviceRoute - Error: No se encontró el dispositivo con ID ${deviceId} en deviceData`);
-        console.log('[DEBUG] deviceData disponible:', window.deviceData);
+        /* console.log eliminado */('[DEBUG] deviceData disponible:', window.deviceData);
         showToast('Error: No se encontró el dispositivo seleccionado', 'error');
         return;
     }
 
     // Obtener el nombre del dispositivo
     const deviceName = window.deviceData[deviceId].name;
-    console.log(`[DEBUG] loadDeviceRoute - Dispositivo seleccionado: ${deviceName} (ID: ${deviceId})`);
+    /* console.log eliminado */(`[DEBUG] loadDeviceRoute - Dispositivo seleccionado: ${deviceName} (ID: ${deviceId})`);
 
     // Mostrar el modal de selección de fechas
     const modal = document.getElementById('route-modal');
     const deviceIdInput = document.getElementById('route-device-id');
     const deviceNameElement = document.getElementById('route-device-name');
 
-    console.log('[DEBUG] loadDeviceRoute - Elementos del DOM:', {
+    /* console.log eliminado */('[DEBUG] loadDeviceRoute - Elementos del DOM:', {
         modal: modal ? 'Encontrado' : 'No encontrado',
         deviceIdInput: deviceIdInput ? 'Encontrado' : 'No encontrado',
         deviceNameElement: deviceNameElement ? 'Encontrado' : 'No encontrado'
@@ -844,16 +782,16 @@ function loadDeviceRoute(deviceId) {
 
     // Establecer el ID del dispositivo en el campo oculto
     deviceIdInput.value = deviceId;
-    console.log(`[DEBUG] loadDeviceRoute - ID del dispositivo establecido en input: ${deviceIdInput.value}`);
+    /* console.log eliminado */(`[DEBUG] loadDeviceRoute - ID del dispositivo establecido en input: ${deviceIdInput.value}`);
 
     // Mostrar el nombre del dispositivo en el modal
     if (deviceNameElement) {
         deviceNameElement.textContent = deviceName;
-        console.log(`[DEBUG] loadDeviceRoute - Nombre del dispositivo establecido en modal: ${deviceName}`);
+        /* console.log eliminado */(`[DEBUG] loadDeviceRoute - Nombre del dispositivo establecido en modal: ${deviceName}`);
     } else {
         console.warn('[DEBUG] loadDeviceRoute - Elemento route-device-name no encontrado');
     }
-    console.log(deviceIdInput)
+    /* console.log eliminado */(deviceIdInput)
 
     // Establecer fechas por defecto (hoy)
     const today = new Date();
@@ -878,23 +816,23 @@ function loadDeviceRoute(deviceId) {
 
 // Cargar ruta con fechas específicas
 function loadRouteWithDates(deviceId, fromDate, toDate) {
-    console.log(`[DEBUG] loadRouteWithDates - Iniciando carga de ruta para dispositivo ID: ${deviceId}`);
-    console.log(`[DEBUG] loadRouteWithDates - Rango de fechas: ${fromDate.toLocaleString()} a ${toDate.toLocaleString()}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Iniciando carga de ruta para dispositivo ID: ${deviceId}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Rango de fechas: ${fromDate.toLocaleString()} a ${toDate.toLocaleString()}`);
 
     // Verificar si estamos usando el dispositivo de prueba que sabemos que tiene datos
     const testDeviceId = 257; // Dispositivo que sabemos que tiene datos según las pruebas
     if (deviceId === testDeviceId) {
-        console.log(`[DEBUG] loadRouteWithDates - Usando dispositivo de prueba conocido (ID: ${testDeviceId})`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Usando dispositivo de prueba conocido (ID: ${testDeviceId})`);
     }
 
     // Mostrar indicador de carga
     showToast('Cargando ruta...', 'info');
 
     // Verificar si las fechas son válidas
-    console.log(`[DEBUG] loadRouteWithDates - Verificando fechas:`);
-    console.log(`[DEBUG] loadRouteWithDates - Fecha actual: ${new Date().toISOString()}`);
-    console.log(`[DEBUG] loadRouteWithDates - fromDate objeto: ${fromDate}`);
-    console.log(`[DEBUG] loadRouteWithDates - toDate objeto: ${toDate}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Verificando fechas:`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Fecha actual: ${new Date().toISOString()}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - fromDate objeto: ${fromDate}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - toDate objeto: ${toDate}`);
 
     // Verificar si las fechas están en el futuro
     const now = new Date();
@@ -911,22 +849,22 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
 
     // Si las fechas están en el futuro o necesitamos un rango más amplio
     if (useAlternativeDates) {
-        console.log(`[DEBUG] loadRouteWithDates - PRUEBA: Intentando con fechas alternativas en el pasado`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - PRUEBA: Intentando con fechas alternativas en el pasado`);
 
         // Crear fechas alternativas (7 días atrás hasta hoy)
         const alternativeFromDate = new Date(now);
         alternativeFromDate.setDate(alternativeFromDate.getDate() - 7); // 7 días atrás
         const alternativeToDate = new Date(now); // Hoy
 
-        console.log(`[DEBUG] loadRouteWithDates - PRUEBA: Fechas alternativas con rango ampliado:`);
-        console.log(`[DEBUG] loadRouteWithDates - PRUEBA: From alternativo: ${alternativeFromDate.toLocaleString()}`);
-        console.log(`[DEBUG] loadRouteWithDates - PRUEBA: To alternativo: ${alternativeToDate.toLocaleString()}`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - PRUEBA: Fechas alternativas con rango ampliado:`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - PRUEBA: From alternativo: ${alternativeFromDate.toLocaleString()}`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - PRUEBA: To alternativo: ${alternativeToDate.toLocaleString()}`);
 
         // Actualizar las fechas para la solicitud
         fromDate = alternativeFromDate;
         toDate = alternativeToDate;
 
-        console.log(`[DEBUG] loadRouteWithDates - PRUEBA: Usando fechas alternativas con rango ampliado (7 días) para la solicitud`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - PRUEBA: Usando fechas alternativas con rango ampliado (7 días) para la solicitud`);
     }
 
     // Calcular intervalo de tiempo
@@ -934,29 +872,29 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
     const intervalDays = Math.floor(intervalMs / (1000 * 60 * 60 * 24));
     const intervalHours = Math.floor((intervalMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const intervalMinutes = Math.floor((intervalMs % (1000 * 60 * 60)) / (1000 * 60));
-    console.log(`[DEBUG] loadRouteWithDates - Intervalo de tiempo: ${intervalDays} días, ${intervalHours} horas, ${intervalMinutes} minutos`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Intervalo de tiempo: ${intervalDays} días, ${intervalHours} horas, ${intervalMinutes} minutos`);
 
     // Formatear fechas correctamente (sin milisegundos)
     const fromISO = fromDate.toISOString().split('.')[0] + 'Z';
     const toISO = toDate.toISOString().split('.')[0] + 'Z';
-    console.log(`[DEBUG] loadRouteWithDates - Fechas formateadas para API:`);
-    console.log(`[DEBUG] loadRouteWithDates - From: ${fromISO}`);
-    console.log(`[DEBUG] loadRouteWithDates - To: ${toISO}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Fechas formateadas para API:`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - From: ${fromISO}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - To: ${toISO}`);
 
     // Construir URL completa para referencia (no se usa directamente)
     const apiUrlExample = `/api/reports/route?deviceId=${deviceId}&from=${fromISO}&to=${toISO}`;
-    console.log(`[DEBUG] loadRouteWithDates - URL de API que se construirá: ${apiUrlExample}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - URL de API que se construirá: ${apiUrlExample}`);
 
     // Verificar si el dispositivo existe en los datos
     if (window.deviceData && window.deviceData[deviceId]) {
-        console.log(`[DEBUG] loadRouteWithDates - Dispositivo encontrado en datos locales: ${window.deviceData[deviceId].name} (ID: ${deviceId})`);
+        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Dispositivo encontrado en datos locales: ${window.deviceData[deviceId].name} (ID: ${deviceId})`);
     } else {
         console.warn(`[DEBUG] loadRouteWithDates - ADVERTENCIA: No se encontró el dispositivo ${deviceId} en datos locales`);
     }
 
     // Limpiar cualquier ruta anterior
     if (routeLayer) {
-        console.log('[DEBUG] loadRouteWithDates - Eliminando capa de ruta anterior');
+        /* console.log eliminado */('[DEBUG] loadRouteWithDates - Eliminando capa de ruta anterior');
         map.removeLayer(routeLayer);
         routeLayer = null;
     }
@@ -969,10 +907,10 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
             markersRemoved++;
         }
     });
-    console.log(`[DEBUG] loadRouteWithDates - Marcadores de ruta eliminados: ${markersRemoved}`);
+    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Marcadores de ruta eliminados: ${markersRemoved}`);
 
     // Solicitar ruta a la API usando el endpoint de reportes
-    console.log('[DEBUG] loadRouteWithDates - Enviando solicitud a la API con parámetros:', {
+    /* console.log eliminado */('[DEBUG] loadRouteWithDates - Enviando solicitud a la API con parámetros:', {
         action: 'getRoute',
         deviceId: deviceId,
         from: fromISO,
@@ -985,26 +923,26 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
         to: toISO
     })
         .then(response => {
-            console.log(`[DEBUG] loadRouteWithDates - Respuesta recibida:`, response);
+            /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Respuesta recibida:`, response);
 
             if (response.success && response.data && response.data.length > 0) {
-                console.log(`[DEBUG] loadRouteWithDates - Puntos recibidos: ${response.data.length}`);
-                console.log(`[DEBUG] loadRouteWithDates - Primer punto:`, response.data[0]);
-                console.log(`[DEBUG] loadRouteWithDates - Último punto:`, response.data[response.data.length - 1]);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Puntos recibidos: ${response.data.length}`);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Primer punto:`, response.data[0]);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Último punto:`, response.data[response.data.length - 1]);
 
                 // Filtrar puntos para asegurarnos de que todos pertenecen al dispositivo solicitado
                 const filteredData = response.data.filter(pos => pos.deviceId === deviceId);
-                console.log(`[DEBUG] loadRouteWithDates - Puntos filtrados: ${filteredData.length} (de ${response.data.length})`);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Puntos filtrados: ${filteredData.length} (de ${response.data.length})`);
 
                 if (filteredData.length === 0) {
                     console.error(`[DEBUG] loadRouteWithDates - Error: No se encontraron puntos para el dispositivo ${deviceId}`);
-                    console.log(`[DEBUG] loadRouteWithDates - IDs de dispositivos en la respuesta:`,
+                    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - IDs de dispositivos en la respuesta:`,
                         [...new Set(response.data.map(pos => pos.deviceId))]);
                     showToast(`No se encontraron puntos para el dispositivo seleccionado`, 'warning');
                     return;
                 }
 
-                console.log(`[DEBUG] loadRouteWithDates - Llamando a showDeviceRoute con ${filteredData.length} puntos`);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Llamando a showDeviceRoute con ${filteredData.length} puntos`);
                 showDeviceRoute(filteredData);
                 showToast(`Mostrando ruta con ${filteredData.length} puntos`, 'success');
             } else {
@@ -1016,17 +954,17 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
                 showToast(message, 'warning');
 
                 // Probar con un dispositivo que sabemos que tiene datos (para depuración)
-                console.log(`[DEBUG] loadRouteWithDates - Intentando con dispositivo de prueba conocido`);
+                /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Intentando con dispositivo de prueba conocido`);
                 const testDeviceId = 257; // Dispositivo que sabemos que tiene datos
                 if (deviceId !== testDeviceId) {
-                    console.log(`[DEBUG] loadRouteWithDates - Probando con dispositivo ID: ${testDeviceId}`);
+                    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Probando con dispositivo ID: ${testDeviceId}`);
 
                     // Crear fechas de prueba (30 días atrás hasta hoy)
                     const testFromDate = new Date(now);
                     testFromDate.setDate(testFromDate.getDate() - 30);
                     const testToDate = new Date(now);
 
-                    console.log(`[DEBUG] loadRouteWithDates - Fechas de prueba: ${testFromDate.toLocaleString()} a ${testToDate.toLocaleString()}`);
+                    /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Fechas de prueba: ${testFromDate.toLocaleString()} a ${testToDate.toLocaleString()}`);
 
                     // Formatear fechas para la API
                     const testFromISO = testFromDate.toISOString().split('.')[0] + 'Z';
@@ -1038,13 +976,13 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
                         from: testFromISO,
                         to: testToISO
                     }).then(testResponse => {
-                        console.log(`[DEBUG] loadRouteWithDates - Respuesta de prueba:`, testResponse);
+                        /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Respuesta de prueba:`, testResponse);
                         if (testResponse.success && Array.isArray(testResponse.data) && testResponse.data.length > 0) {
-                            console.log(`[DEBUG] loadRouteWithDates - ÉXITO: El dispositivo de prueba tiene ${testResponse.data.length} puntos`);
-                            console.log(`[DEBUG] loadRouteWithDates - Primer punto:`, testResponse.data[0]);
-                            console.log(`[DEBUG] loadRouteWithDates - Último punto:`, testResponse.data[testResponse.data.length - 1]);
+                            /* console.log eliminado */(`[DEBUG] loadRouteWithDates - ÉXITO: El dispositivo de prueba tiene ${testResponse.data.length} puntos`);
+                            /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Primer punto:`, testResponse.data[0]);
+                            /* console.log eliminado */(`[DEBUG] loadRouteWithDates - Último punto:`, testResponse.data[testResponse.data.length - 1]);
                         } else {
-                            console.log(`[DEBUG] loadRouteWithDates - El dispositivo de prueba tampoco tiene datos`);
+                            /* console.log eliminado */(`[DEBUG] loadRouteWithDates - El dispositivo de prueba tampoco tiene datos`);
                         }
                     }).catch(error => {
                         console.error(`[DEBUG] loadRouteWithDates - Error en solicitud de prueba:`, error);
@@ -1065,11 +1003,11 @@ function loadRouteWithDates(deviceId, fromDate, toDate) {
 
 // Mostrar ruta en el mapa
 function showDeviceRoute(positions) {
-    console.log(`[DEBUG] showDeviceRoute - Iniciando visualización de ruta con ${positions ? positions.length : 0} puntos`);
+    /* console.log eliminado */(`[DEBUG] showDeviceRoute - Iniciando visualización de ruta con ${positions ? positions.length : 0} puntos`);
 
     // Limpiar ruta anterior si existe
     if (routeLayer) {
-        console.log('[DEBUG] showDeviceRoute - Eliminando capa de ruta anterior');
+        /* console.log eliminado */('[DEBUG] showDeviceRoute - Eliminando capa de ruta anterior');
         map.removeLayer(routeLayer);
         routeLayer = null;
     }
@@ -1082,7 +1020,7 @@ function showDeviceRoute(positions) {
             markersRemoved++;
         }
     });
-    console.log(`[DEBUG] showDeviceRoute - Marcadores de ruta eliminados: ${markersRemoved}`);
+    /* console.log eliminado */(`[DEBUG] showDeviceRoute - Marcadores de ruta eliminados: ${markersRemoved}`);
 
     // Verificar si hay suficientes puntos
     if (!positions) {
@@ -1091,21 +1029,21 @@ function showDeviceRoute(positions) {
         return;
     }
 
-    console.log(`[DEBUG] showDeviceRoute - Procesando ${positions.length} puntos`);
+    /* console.log eliminado */(`[DEBUG] showDeviceRoute - Procesando ${positions.length} puntos`);
 
     // Obtener el ID del dispositivo del primer punto
     const firstDeviceId = positions[0].deviceId;
-    console.log(`[DEBUG] showDeviceRoute - ID del dispositivo del primer punto: ${firstDeviceId}`);
+    /* console.log eliminado */(`[DEBUG] showDeviceRoute - ID del dispositivo del primer punto: ${firstDeviceId}`);
 
     // Filtrar puntos para asegurarnos de que todos pertenecen al mismo dispositivo
     const filteredPositions = positions.filter(pos => pos.deviceId === firstDeviceId);
 
     if (filteredPositions.length !== positions.length) {
         console.warn(`[DEBUG] showDeviceRoute - Se filtraron ${positions.length - filteredPositions.length} puntos de otros dispositivos`);
-        console.log(`[DEBUG] showDeviceRoute - IDs de dispositivos en los puntos originales:`,
+        /* console.log eliminado */(`[DEBUG] showDeviceRoute - IDs de dispositivos en los puntos originales:`,
             [...new Set(positions.map(pos => pos.deviceId))]);
         positions = filteredPositions;
-        console.log(`[DEBUG] showDeviceRoute - Usando ${positions.length} puntos del dispositivo ${firstDeviceId}`);
+        /* console.log eliminado */(`[DEBUG] showDeviceRoute - Usando ${positions.length} puntos del dispositivo ${firstDeviceId}`);
     }
 
     if (positions.length < 2) {
@@ -1115,9 +1053,9 @@ function showDeviceRoute(positions) {
     }
 
     // Mostrar los primeros puntos para depuración
-    console.log('[DEBUG] showDeviceRoute - Primer punto:', positions[0]);
-    console.log('[DEBUG] showDeviceRoute - Último punto:', positions[positions.length - 1]);
-    console.log('[DEBUG] showDeviceRoute - Rango de tiempo:', {
+    /* console.log eliminado */('[DEBUG] showDeviceRoute - Primer punto:', positions[0]);
+    /* console.log eliminado */('[DEBUG] showDeviceRoute - Último punto:', positions[positions.length - 1]);
+    /* console.log eliminado */('[DEBUG] showDeviceRoute - Rango de tiempo:', {
         inicio: new Date(positions[0].deviceTime).toLocaleString(),
         fin: new Date(positions[positions.length - 1].deviceTime).toLocaleString(),
         duracion: Math.round((new Date(positions[positions.length - 1].deviceTime) - new Date(positions[0].deviceTime)) / 60000) + ' minutos'
@@ -1130,7 +1068,7 @@ function showDeviceRoute(positions) {
 
     if (invalidPoints.length > 0) {
         console.warn(`[DEBUG] showDeviceRoute - ADVERTENCIA: Hay ${invalidPoints.length} puntos con coordenadas inválidas`);
-        console.log(`[DEBUG] showDeviceRoute - Primer punto inválido:`, invalidPoints[0]);
+        /* console.log eliminado */(`[DEBUG] showDeviceRoute - Primer punto inválido:`, invalidPoints[0]);
     }
 
     // Verificar si hay puntos duplicados
@@ -1147,7 +1085,7 @@ function showDeviceRoute(positions) {
     });
 
     if (duplicatePoints.length > 0) {
-        console.log(`[DEBUG] showDeviceRoute - Hay ${duplicatePoints.length} puntos duplicados de ${positions.length} totales`);
+        /* console.log eliminado */(`[DEBUG] showDeviceRoute - Hay ${duplicatePoints.length} puntos duplicados de ${positions.length} totales`);
     }
 
     // Verificar la distancia entre puntos consecutivos
@@ -1166,7 +1104,7 @@ function showDeviceRoute(positions) {
     }
 
     if (maxDistanceIndex > 0) {
-        console.log(`[DEBUG] showDeviceRoute - Distancia máxima entre puntos: ${(maxDistance/1000).toFixed(2)} km entre los puntos ${maxDistanceIndex-1} y ${maxDistanceIndex}`);
+        /* console.log eliminado */(`[DEBUG] showDeviceRoute - Distancia máxima entre puntos: ${(maxDistance/1000).toFixed(2)} km entre los puntos ${maxDistanceIndex-1} y ${maxDistanceIndex}`);
     }
 
     // Activar modo de visualización exclusiva
@@ -1269,7 +1207,6 @@ function sendEngineStopCommand(deviceId) {
 
 // Función para realizar solicitudes a la API
 function apiRequest(action, params) {
- 
     const formData = new FormData();
     formData.append('csrf_token', config.csrfToken);
     formData.append('action', action);
@@ -1287,7 +1224,7 @@ function apiRequest(action, params) {
 
     // Si es una solicitud de ruta, asegurarse de que se solicite JSON
     if (action === 'getRoute') {
-        console.log(`[DEBUG] apiRequest - Agregando cabecera Accept: application/json para solicitud de ruta`);
+        /* console.log eliminado */(`[DEBUG] apiRequest - Agregando cabecera Accept: application/json para solicitud de ruta`);
         fetchOptions.headers['Accept'] = 'application/json';
     }
 
@@ -1296,8 +1233,8 @@ function apiRequest(action, params) {
             const endTime = Date.now();
             const duration = endTime - startTime;
 
-            console.log(`[DEBUG] apiRequest - Respuesta recibida en ${duration}ms`);
-            console.log(`[DEBUG] apiRequest - Status: ${response.status} ${response.statusText}`);
+            /* console.log eliminado */(`[DEBUG] apiRequest - Respuesta recibida en ${duration}ms`);
+            /* console.log eliminado */(`[DEBUG] apiRequest - Status: ${response.status} ${response.statusText}`);
 
             if (!response.ok) {
                 console.error(`[DEBUG] apiRequest - Error de red: ${response.status} ${response.statusText}`);
@@ -1311,30 +1248,30 @@ function apiRequest(action, params) {
             clonedResponse.text().then(text => {
                 try {
                     if (text.length > 1000) {
-                        console.log(`[DEBUG] apiRequest - Respuesta (truncada): ${text.substring(0, 1000)}...`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Respuesta (truncada): ${text.substring(0, 1000)}...`);
                     } else {
-                        console.log(`[DEBUG] apiRequest - Respuesta completa: ${text}`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Respuesta completa: ${text}`);
                     }
                 } catch (e) {
-                    console.log(`[DEBUG] apiRequest - Error al mostrar texto de respuesta:`, e);
+                    /* console.log eliminado */(`[DEBUG] apiRequest - Error al mostrar texto de respuesta:`, e);
                 }
             });
 
             return response.json();
         })
         .then(data => {
-            console.log(`[DEBUG] apiRequest - Datos JSON parseados:`, data);
+            /* console.log eliminado */(`[DEBUG] apiRequest - Datos JSON parseados:`, data);
 
             // Verificar si es una solicitud de ruta
             if (action === 'getRoute') {
-                console.log(`[DEBUG] apiRequest - Analizando respuesta de ruta:`);
+                /* console.log eliminado */(`[DEBUG] apiRequest - Analizando respuesta de ruta:`);
 
                 if (data.success && Array.isArray(data.data)) {
-                    console.log(`[DEBUG] apiRequest - Respuesta de ruta contiene ${data.data.length} puntos`);
+                    /* console.log eliminado */(`[DEBUG] apiRequest - Respuesta de ruta contiene ${data.data.length} puntos`);
 
                     if (data.data.length === 0) {
                         console.warn(`[DEBUG] apiRequest - ADVERTENCIA: La respuesta de ruta no contiene puntos`);
-                        console.log(`[DEBUG] apiRequest - Verificar parámetros: deviceId=${params.deviceId}, from=${params.from}, to=${params.to}`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Verificar parámetros: deviceId=${params.deviceId}, from=${params.from}, to=${params.to}`);
 
                         // Verificar si las fechas están en el futuro
                         const now = new Date();
@@ -1347,7 +1284,7 @@ function apiRequest(action, params) {
 
                         // Verificar si el dispositivo existe
                         if (window.deviceData && window.deviceData[params.deviceId]) {
-                            console.log(`[DEBUG] apiRequest - Dispositivo ${params.deviceId} existe en datos locales: ${window.deviceData[params.deviceId].name}`);
+                            /* console.log eliminado */(`[DEBUG] apiRequest - Dispositivo ${params.deviceId} existe en datos locales: ${window.deviceData[params.deviceId].name}`);
                         } else {
                             console.warn(`[DEBUG] apiRequest - ADVERTENCIA: Dispositivo ${params.deviceId} no encontrado en datos locales`);
                         }
@@ -1356,12 +1293,12 @@ function apiRequest(action, params) {
                         const firstPoint = data.data[0];
                         const lastPoint = data.data[data.data.length - 1];
 
-                        console.log(`[DEBUG] apiRequest - Primer punto: deviceId=${firstPoint.deviceId}, tiempo=${new Date(firstPoint.deviceTime).toLocaleString()}`);
-                        console.log(`[DEBUG] apiRequest - Último punto: deviceId=${lastPoint.deviceId}, tiempo=${new Date(lastPoint.deviceTime).toLocaleString()}`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Primer punto: deviceId=${firstPoint.deviceId}, tiempo=${new Date(firstPoint.deviceTime).toLocaleString()}`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Último punto: deviceId=${lastPoint.deviceId}, tiempo=${new Date(lastPoint.deviceTime).toLocaleString()}`);
 
                         // Verificar si todos los puntos pertenecen al mismo dispositivo
                         const deviceIds = [...new Set(data.data.map(point => point.deviceId))];
-                        console.log(`[DEBUG] apiRequest - Dispositivos en los puntos: ${deviceIds.join(', ')}`);
+                        /* console.log eliminado */(`[DEBUG] apiRequest - Dispositivos en los puntos: ${deviceIds.join(', ')}`);
 
                         if (deviceIds.length > 1) {
                             console.warn(`[DEBUG] apiRequest - ADVERTENCIA: Los puntos pertenecen a múltiples dispositivos`);
@@ -1389,8 +1326,6 @@ function apiRequest(action, params) {
 const addressCache = {};
 
 // Variable para controlar el tiempo entre solicitudes
-let lastAddressRequest = 0;
-const MIN_REQUEST_INTERVAL = 1000; // 1 segundo entre solicitudes
 
 // Obtener dirección usando la API de geocodificación inversa de LocationIQ
 async function getAddress(lat, lon) {
@@ -1527,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDevices().then(() => {
         // Verificar si hay parámetros de ruta en la URL
         if (typeof routeParams !== 'undefined' && routeParams.deviceId && routeParams.from && routeParams.to) {
-            console.log(`[DEBUG] Cargando ruta desde parámetros de URL:`, routeParams);
+            /* console.log eliminado */(`[DEBUG] Cargando ruta desde parámetros de URL:`, routeParams);
 
             // Convertir deviceId a número
             const deviceId = parseInt(routeParams.deviceId);
@@ -1538,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Verificar si las fechas son válidas
             if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
-                console.log(`[DEBUG] Cargando ruta para dispositivo ${deviceId} desde ${fromDate.toLocaleString()} hasta ${toDate.toLocaleString()}`);
+                /* console.log eliminado */(`[DEBUG] Cargando ruta para dispositivo ${deviceId} desde ${fromDate.toLocaleString()} hasta ${toDate.toLocaleString()}`);
 
                 // Esperar un momento para asegurarse de que los dispositivos estén cargados
                 setTimeout(() => {
@@ -1590,7 +1525,7 @@ function enterRouteMode(deviceId) {
         console.warn(`[enterRouteMode] No se encontró el marcador para el dispositivo ${deviceId}`);
         // Intentar buscar el dispositivo en los datos
         if (deviceData[deviceId] && deviceData[deviceId].lastPosition) {
-            console.log(`[enterRouteMode] Creando marcador para el dispositivo ${deviceId}`);
+            /* console.log eliminado */(`[enterRouteMode] Creando marcador para el dispositivo ${deviceId}`);
             createMarker(deviceData[deviceId], deviceData[deviceId].lastPosition);
         } else {
             console.error(`[enterRouteMode] No se encontraron datos para el dispositivo ${deviceId}`);
@@ -1604,7 +1539,7 @@ function enterRouteMode(deviceId) {
     }
 
     // Crear botón para volver a la vista normal
-    console.log('[enterRouteMode] Creando botón para volver a la vista normal');
+    /* console.log eliminado */('[enterRouteMode] Creando botón para volver a la vista normal');
 
     // Crear botón personalizado
     const RouteBackControl = L.Control.extend({
