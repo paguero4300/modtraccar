@@ -756,24 +756,14 @@ $user = $_SESSION['user'];
 
                                 echo '<div>Velocidad: ' . $speed . ' km/h</div>';
 
-                                // Añadir fecha y hora del GPS (ajustada a GMT-5)
-                                $gpsTime = 'N/A';
-                                if (isset($device['position']['deviceTime'])) {
-                                    // Convertir a timestamp, ajustar a GMT-5 y formatear
-                                    $timestamp = strtotime($device['position']['deviceTime']);
-                                    // Ajustar a GMT-5 (restando 5 horas en segundos)
-                                    $timestamp_gmt5 = $timestamp - (5 * 3600);
-                                    $gpsTime = date('d/m/Y H:i:s', $timestamp_gmt5);
-                                }
+                                // Añadir fecha y hora del GPS
+                                $gpsTime = isset($device['position']['deviceTime']) ? date('d/m/Y H:i:s', strtotime($device['position']['deviceTime'])) : 'N/A';
                                 // Calcular cuánto tiempo ha pasado desde la última actualización GPS
                                 $gpsTimeClass = 'text-success';
                                 $gpsTimeText = $gpsTime;
 
                                 if (isset($device['position']['deviceTime'])) {
-                                    // Calcular diferencia de tiempo considerando GMT-5
-                                    $timestamp = strtotime($device['position']['deviceTime']);
-                                    $timestamp_gmt5 = $timestamp - 5 * 3600;
-                                    $timeDiff = time() - 5 * 3600 - $timestamp_gmt5; // Ajustar time() también a GMT-5
+                                    $timeDiff = time() - strtotime($device['position']['deviceTime']);
                                     if ($timeDiff > 3600) { // Más de 1 hora
                                         $gpsTimeClass = 'text-error';
                                         $hoursAgo = floor($timeDiff / 3600);
@@ -787,15 +777,7 @@ $user = $_SESSION['user'];
 
                                 echo '<div>Hora GPS: <span class="' . $gpsTimeClass . '">' . $gpsTimeText . '</span></div>';
 
-                                // Mostrar último despacho (ajustado a GMT-5)
-                                $ultimoDespacho = 'N/A';
-                                if (isset($device['ultimo_despacho'])) {
-                                    $timestamp = strtotime($device['ultimo_despacho']);
-                                    // Ajustar a GMT-5
-                                    $timestamp_gmt5 = $timestamp - 5 * 3600;
-                                    $ultimoDespacho = date('d/m/Y H:i', $timestamp_gmt5);
-                                }
-                                echo '<div>Último despacho: ' . $ultimoDespacho . '</div>';
+                                echo '<div>Último despacho: ' . (isset($device['ultimo_despacho']) ? date('d/m/Y H:i', strtotime($device['ultimo_despacho'])) : 'N/A') . '</div>';
 
                                 // Verificar si está atrasado o adelantado respecto al horario
                                 if (isset($device['attributes']['diferencia_horario'])) {
@@ -1017,24 +999,14 @@ $user = $_SESSION['user'];
 
                                 echo '<div>Velocidad: ' . $speed . ' km/h</div>';
 
-                                // Añadir fecha y hora del GPS (ajustada a GMT-5)
-                                $gpsTime = 'N/A';
-                                if (isset($device['position']['deviceTime'])) {
-                                    // Convertir a timestamp, ajustar a GMT-5 y formatear
-                                    $timestamp = strtotime($device['position']['deviceTime']);
-                                    // Ajustar a GMT-5 (restando 5 horas en segundos)
-                                    $timestamp_gmt5 = $timestamp - 5 * 3600;
-                                    $gpsTime = date('d/m/Y H:i:s', $timestamp_gmt5);
-                                }
+                                // Añadir fecha y hora del GPS
+                                $gpsTime = isset($device['position']['deviceTime']) ? date('d/m/Y H:i:s', strtotime($device['position']['deviceTime'])) : 'N/A';
                                 // Calcular cuánto tiempo ha pasado desde la última actualización GPS
                                 $gpsTimeClass = 'text-success';
                                 $gpsTimeText = $gpsTime;
 
                                 if (isset($device['position']['deviceTime'])) {
-                                    // Calcular diferencia de tiempo considerando GMT-5
-                                    $timestamp = strtotime($device['position']['deviceTime']);
-                                    $timestamp_gmt5 = $timestamp - 5 * 3600;
-                                    $timeDiff = time() - 5 * 3600 - $timestamp_gmt5; // Ajustar time() también a GMT-5
+                                    $timeDiff = time() - strtotime($device['position']['deviceTime']);
                                     if ($timeDiff > 3600) { // Más de 1 hora
                                         $gpsTimeClass = 'text-error';
                                         $hoursAgo = floor($timeDiff / 3600);
@@ -1048,15 +1020,7 @@ $user = $_SESSION['user'];
 
                                 echo '<div>Hora GPS: <span class="' . $gpsTimeClass . '">' . $gpsTimeText . '</span></div>';
 
-                                // Mostrar último despacho (ajustado a GMT-5)
-                                $ultimoDespacho = 'N/A';
-                                if (isset($device['ultimo_despacho'])) {
-                                    $timestamp = strtotime($device['ultimo_despacho']);
-                                    // Ajustar a GMT-5
-                                    $timestamp_gmt5 = $timestamp - 5 * 3600;
-                                    $ultimoDespacho = date('d/m/Y H:i', $timestamp_gmt5);
-                                }
-                                echo '<div>Último despacho: ' . $ultimoDespacho . '</div>';
+                                echo '<div>Último despacho: ' . (isset($device['ultimo_despacho']) ? date('d/m/Y H:i', strtotime($device['ultimo_despacho'])) : 'N/A') . '</div>';
 
                                 // Verificar si está atrasado o adelantado respecto al horario
                                 if (isset($device['attributes']['diferencia_horario'])) {
