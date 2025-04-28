@@ -194,7 +194,7 @@ class TraccarAPI {
                     // Verificar si attributes es un array
                     if (!isset($device['attributes']) || !is_array($device['attributes'])) {
                         $device['attributes'] = [];
-                        file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::creatingAttributes: " . $key . PHP_EOL, FILE_APPEND);
+                       
                     }
                     
                     // Añadir los campos extra al dispositivo de Traccar
@@ -206,10 +206,7 @@ class TraccarAPI {
                     $device['padron'] = $externalDataMap[$key]['padron'] ?? null;
                     $device['terminal'] = $externalDataMap[$key]['terminal'] ?? null;
                     $device['ultimo_despacho'] = $externalDataMap[$key]['ultimo_despacho'] ?? null;
-                    
-                    // Logear la asignación
-                    file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::matchedDevice: " . $key . 
-                        " - Padron: " . ($device['attributes']['padron'] ?? 'null') . PHP_EOL, FILE_APPEND);
+                
                     
                     $matched = true;
                     break; // Salir del bucle de claves si se encuentra una coincidencia
@@ -231,7 +228,20 @@ class TraccarAPI {
             $combinedDevices[] = $device;
         }
 
-        return $combinedDevices;
+        // Agregar marca para depuración en consola
+        $result = $combinedDevices;
+        
+        // Agregar información de depuración para que se pueda ver en la consola del navegador
+        foreach ($result as &$device) {
+            $device['_debug_info'] = 'Datos combinados para mostrar en console.log';
+            
+            // Asegurar que los datos importantes sean visibles explícitamente
+            if (!isset($device['padron'])) $device['padron'] = null;
+            if (!isset($device['terminal'])) $device['terminal'] = null;
+            if (!isset($device['ultimo_despacho'])) $device['ultimo_despacho'] = null;
+        }
+        
+        return $result;
     }
 
     /**

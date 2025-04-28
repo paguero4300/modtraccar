@@ -121,13 +121,28 @@ function loadDevices() {
         apiRequest('getDevices')
             .then(response => {
                 if (response.success) {
-                    /* console.log eliminado */('Dispositivos cargados:', response.data.length);
+                    console.log('[DEBUG] Dispositivos cargados:', response.data.length);
+                    
+                    // Mostrar información detallada de dispositivos con sus atributos de terminal y último despacho
+                    console.log('[INFO] Datos combinados de dispositivos y API externa:', response.data);
+                    
+                    // Verificar si hay dispositivos con datos externos
+                    let devicesWithExternalData = response.data.filter(device => 
+                        device.padron !== null || 
+                        device.terminal !== null || 
+                        device.ultimo_despacho !== null
+                    );
+                    
+                    console.log('[INFO] Dispositivos con datos externos:', devicesWithExternalData.length);
+                    if (devicesWithExternalData.length > 0) {
+                        console.log('[INFO] Muestra de dispositivos con datos externos:', devicesWithExternalData.slice(0, 3));
+                    }
+                    
                     updateDevices(response.data);
 
                     // Cargar posiciones después de obtener dispositivos
                     loadPositions();
 
-                    // Resolver la promesa con los datos de dispositivos
                     resolve(response.data);
                 } else {
                     console.error('Error al cargar dispositivos:', response.message);
