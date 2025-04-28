@@ -1269,17 +1269,12 @@ function sendEngineStopCommand(deviceId) {
 
 // Función para realizar solicitudes a la API
 function apiRequest(action, params) {
-    console.log(`[DEBUG] apiRequest - Iniciando solicitud: ${action}`, params);
-
+ 
     const formData = new FormData();
     formData.append('csrf_token', config.csrfToken);
     formData.append('action', action);
     formData.append('params', JSON.stringify(params));
 
-    console.log(`[DEBUG] apiRequest - URL: ${config.apiUrl}`);
-    console.log(`[DEBUG] apiRequest - Método: POST`);
-    console.log(`[DEBUG] apiRequest - CSRF Token: ${config.csrfToken.substring(0, 5)}...`);
-    console.log(`[DEBUG] apiRequest - Parámetros JSON:`, JSON.stringify(params));
 
     const startTime = Date.now();
 

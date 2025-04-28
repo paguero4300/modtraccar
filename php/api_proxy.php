@@ -116,7 +116,7 @@ class TraccarAPI {
         }
 
 
-        error_log("NO CARGA");
+
 
 
         if ($httpCode >= 200 && $httpCode < 300) {
@@ -188,17 +188,6 @@ class TraccarAPI {
                 $possibleKeys[] = strtoupper(trim($nameParts[0]));
             }
 
-
-            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::nameParts: " . json_encode($nameParts[0]) . PHP_EOL, FILE_APPEND);
-            
-            // Debuggear la búsqueda de coincidencias
-            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::possibleKey: " . json_encode($possibleKeys[0]) . PHP_EOL, FILE_APPEND);
-            file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::keyExists: " . json_encode(isset($externalDataMap[$possibleKeys[0]])) . PHP_EOL, FILE_APPEND);
-            
-            // Imprimir las claves en el mapa para depuración
-            if ($nameParts[0] == '042') {
-                file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::externalMapKeys: " . json_encode(array_keys($externalDataMap)) . PHP_EOL, FILE_APPEND);
-            }
 
             foreach ($possibleKeys as $key) {
                 if (isset($externalDataMap[$key])) {
