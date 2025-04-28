@@ -235,6 +235,9 @@ window.updateVehiclesList = function() {
                                     ${position ? `<div class="badge ${movementClass} badge-sm">${movementText}</div>` : ''}
                                 </div>
                                 <p class="text-xs truncate opacity-70">${address}</p>
+                                ${device.padron ? `<p class="text-xs"><span class="font-semibold">Padrón:</span> ${device.padron}</p>` : ''}
+                                ${device.terminal ? `<p class="text-xs"><span class="font-semibold">Terminal:</span> ${device.terminal}</p>` : ''}
+                                ${device.ultimo_despacho ? `<p class="text-xs"><span class="font-semibold">Último despacho:</span> ${device.ultimo_despacho}</p>` : ''}
                             </div>
                             <div class="text-right text-xs">
                                 <p class="font-semibold">${speed}</p>

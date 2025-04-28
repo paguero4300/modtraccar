@@ -141,6 +141,32 @@ $user = $_SESSION['user'];
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f87272" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
         }
 
+        /* Iconos para vehículos según terminal */
+        .vehicle-marker-icon.terminal-a.moving {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2336D399" stroke="%23000000" stroke-width="0.2"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>');
+        }
+
+        .vehicle-marker-icon.terminal-a.stopped {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2336D399" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        .vehicle-marker-icon.terminal-b.moving {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FF7AC6" stroke="%23000000" stroke-width="0.2"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>');
+        }
+
+        .vehicle-marker-icon.terminal-b.stopped {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FF7AC6" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        /* Iconos para vehículos sin despacho hoy */
+        .vehicle-marker-icon.no-despacho.moving {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FBBD23" stroke="%23000000" stroke-width="0.2"><path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/></svg>');
+        }
+
+        .vehicle-marker-icon.no-despacho.stopped {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FBBD23" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
         .vehicle-name-label {
             color: #333;
             background-color: rgba(255, 255, 255, 0.8);
@@ -353,6 +379,59 @@ $user = $_SESSION['user'];
             border: 2px solid #3b82f6 !important;
         }
 
+        /* Estilos para la leyenda de iconos */
+        .icon-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 250px;
+        }
+
+        [data-theme="dark"] .icon-legend {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .legend-terminal-a {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2336D399" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        .legend-terminal-b {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FF7AC6" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        .legend-no-despacho {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FBBD23" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        .legend-default {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23570df8" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
+        .legend-offline {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f87272" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+        }
+
         .route-back-button:hover {
             background-color: #f0f9ff !important;
             transform: scale(1.05) !important;
@@ -430,13 +509,19 @@ $user = $_SESSION['user'];
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
                     </svg>
                 </button>
-                <div class="ml-2">
+                <div class="ml-2 flex gap-2">
                     <a href="route_viewer.php" class="btn btn-sm btn-primary flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                         </svg>
                         Ver recorrido
                     </a>
+                    <button id="btn-show-dispatch-report" class="btn btn-sm btn-secondary flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605" />
+                        </svg>
+                        Reporte de despachos
+                    </button>
                 </div>
             </div>
             <div class="navbar-center hidden lg:flex items-center gap-3">
@@ -510,7 +595,7 @@ $user = $_SESSION['user'];
                     <div id="vehicles-list" class="space-y-2">
                         <!-- Lista de vehículos (se llena dinámicamente) -->
                         <div class="skeleton h-12 w-full"></div>
-                       
+
                     </div>
                 </div>
             </div>
@@ -519,6 +604,30 @@ $user = $_SESSION['user'];
             <div id="map-container" class="flex-1 relative">
                 <div id="map" class="h-full w-full"></div>
 
+                <!-- Leyenda de iconos -->
+                <div class="icon-legend">
+                    <h3 class="text-sm font-bold mb-2">Leyenda de iconos</h3>
+                    <div class="legend-item">
+                        <div class="legend-icon legend-terminal-a" style="transform: rotate(0deg);"></div>
+                        <span class="text-xs">Terminal A (Ida) - Hacia arriba</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon legend-terminal-b" style="transform: rotate(180deg);"></div>
+                        <span class="text-xs">Terminal B (Vuelta) - Hacia abajo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon legend-no-despacho"></div>
+                        <span class="text-xs">Sin despacho hoy</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon legend-default"></div>
+                        <span class="text-xs">En línea</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-icon legend-offline"></div>
+                        <span class="text-xs">Desconectado</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Panel de detalles del vehículo (inicialmente oculto) - Ahora en la parte inferior -->
@@ -526,10 +635,10 @@ $user = $_SESSION['user'];
                 <div class="p-3">
                     <div class="flex justify-between items-center mb-2">
                         <h2 class="text-base font-bold flex items-center gap-1" id="panel-vehicle-name">
-                    
+
                             <span id="vehicle-name-text">Detalles del vehículo</span>
                         </h2>
-                       
+
                     </div>
                     <div id="panel-vehicle-details" class="grid grid-cols-3 gap-3 mb-2">
                         <!-- Detalles del vehículo (se llena dinámicamente) -->
@@ -560,6 +669,91 @@ $user = $_SESSION['user'];
             <div class="modal-action">
                 <form method="dialog">
                     <button class="btn">Cerrar </button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Modal para el reporte de despachos -->
+    <dialog id="dispatch-report-modal" class="modal">
+        <div class="modal-box max-w-4xl">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-secondary">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605" />
+                </svg>
+                Reporte de Despachos
+            </h3>
+            <div class="py-4">
+                <div class="stats shadow w-full mb-4">
+                    <div class="stat">
+                        <div class="stat-figure text-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Total de Vehículos</div>
+                        <div class="stat-value" id="total-vehicles">0</div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="stat-figure text-success">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-success">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Despachados Hoy</div>
+                        <div class="stat-value text-success" id="dispatched-today">0</div>
+                    </div>
+
+                    <div class="stat">
+                        <div class="stat-figure text-warning">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-warning">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                        </div>
+                        <div class="stat-title">Sin Despacho</div>
+                        <div class="stat-value text-warning" id="not-dispatched">0</div>
+                    </div>
+                </div>
+
+                <div class="tabs tabs-boxed mb-4">
+                    <a class="tab tab-active" id="tab-all">Todos</a>
+                    <a class="tab" id="tab-dispatched">Despachados</a>
+                    <a class="tab" id="tab-not-dispatched">Sin Despacho</a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Vehículo</th>
+                                <th>Padrón</th>
+                                <th>Terminal</th>
+                                <th>Último Despacho</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dispatch-report-table">
+                            <!-- Se llenará dinámicamente -->
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <span class="loading loading-spinner loading-lg"></span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button class="btn btn-primary" id="btn-export-report">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Exportar CSV
+                </button>
+                <form method="dialog">
+                    <button class="btn">Cerrar</button>
                 </form>
             </div>
         </div>
@@ -655,5 +849,6 @@ $user = $_SESSION['user'];
     <script src="js/websocket.js"></script>
     <script src="js/map.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/dispatch-report.js"></script>
 </body>
 </html>

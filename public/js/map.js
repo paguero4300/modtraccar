@@ -71,7 +71,7 @@ function initMap() {
         window.isRouteMode = false;
         window.currentRouteDeviceId = null;
         window.routeBackButton = null;
-        
+
         // Variables para las rutas
         window.rutaIdaPolyline = null;
         window.rutaVueltaPolyline = null;
@@ -79,7 +79,7 @@ function initMap() {
 
         // Sincronizar tema del mapa con el tema de la aplicación
         syncMapTheme();
-        
+
         // Cargar y mostrar las rutas
         loadRoutes();
 
@@ -122,22 +122,22 @@ function loadDevices() {
             .then(response => {
                 if (response.success) {
                     console.log('[DEBUG] Dispositivos cargados:', response.data.length);
-                    
+
                     // Mostrar información detallada de dispositivos con sus atributos de terminal y último despacho
                     console.log('[INFO] Datos combinados de dispositivos y API externa:', response.data);
-                    
+
                     // Verificar si hay dispositivos con datos externos
-                    let devicesWithExternalData = response.data.filter(device => 
-                        device.padron !== null || 
-                        device.terminal !== null || 
+                    let devicesWithExternalData = response.data.filter(device =>
+                        device.padron !== null ||
+                        device.terminal !== null ||
                         device.ultimo_despacho !== null
                     );
-                    
+
                     console.log('[INFO] Dispositivos con datos externos:', devicesWithExternalData.length);
                     if (devicesWithExternalData.length > 0) {
                         console.log('[INFO] Muestra de dispositivos con datos externos:', devicesWithExternalData.slice(0, 3));
                     }
-                    
+
                     updateDevices(response.data);
 
                     // Cargar posiciones después de obtener dispositivos
@@ -246,12 +246,35 @@ function createMarker(device, position) {
     const isOnline = new Date() - new Date(position.deviceTime) < 5 * 60 * 1000;
     const isMoving = position.speed > 0.54; // 0.54 nudos ≈ 1 km/h
     const iconClass = isMoving ? 'moving' : 'stopped';
-    const statusClass = isOnline ? '' : 'offline';
+    let statusClass = isOnline ? '' : 'offline';
+
+    // Determinar clase adicional según terminal y último despacho
+    const terminalClass = getTerminalClass(device);
+    const despachoClass = getDespachoClass(device);
+
+    // Priorizar clases: primero despacho, luego terminal, luego estado online/offline
+    let finalClass = statusClass;
+    if (terminalClass) {
+        finalClass = terminalClass;
+    }
+    if (despachoClass) {
+        finalClass = despachoClass;
+    }
+
+    // Determinar la rotación según el terminal
+    let rotation = position.course || 0;
+    if (device.terminal) {
+        if (device.terminal.toUpperCase() === 'A') {
+            rotation = 0; // Apunta hacia arriba para terminal A (ida)
+        } else if (device.terminal.toUpperCase() === 'B') {
+            rotation = 180; // Apunta hacia abajo para terminal B (vuelta)
+        }
+    }
 
     // Crear HTML para el marcador con etiqueta de nombre
     const iconHtml = `
         <div class="marker-container">
-            <div class="vehicle-marker-icon ${statusClass} ${iconClass}" style="transform: rotate(${position.course || 0}deg);"></div>
+            <div class="vehicle-marker-icon ${finalClass} ${iconClass}" style="transform: rotate(${rotation}deg);"></div>
             <div class="vehicle-name-label">${device.name}</div>
         </div>
     `;
@@ -283,18 +306,76 @@ function createMarker(device, position) {
     return marker;
 }
 
+// Función para determinar la clase según el terminal
+function getTerminalClass(device) {
+    if (!device.terminal) return null;
+
+    // Si el terminal es A, usar clase terminal-a
+    if (device.terminal.toUpperCase() === 'A') {
+        return 'terminal-a';
+    }
+    // Si el terminal es B, usar clase terminal-b
+    else if (device.terminal.toUpperCase() === 'B') {
+        return 'terminal-b';
+    }
+
+    return null;
+}
+
+// Función para determinar la clase según la fecha de último despacho
+function getDespachoClass(device) {
+    if (!device.ultimo_despacho) return null;
+
+    // Obtener la fecha actual y la fecha del último despacho
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Establecer a las 00:00:00 para comparar solo la fecha
+
+    const despachoDate = new Date(device.ultimo_despacho);
+    despachoDate.setHours(0, 0, 0, 0);
+
+    // Si la fecha de último despacho no es hoy, usar clase no-despacho
+    if (despachoDate.getTime() < today.getTime()) {
+        return 'no-despacho';
+    }
+
+    return null;
+}
+
 // Actualizar el icono del marcador
 function updateMarkerIcon(marker, device, position) {
     // Calcular datos para el icono
     const isOnline = new Date() - new Date(position.deviceTime) < 5 * 60 * 1000;
     const isMoving = position.speed > 0.54; // 0.54 nudos ≈ 1 km/h
     const iconClass = isMoving ? 'moving' : 'stopped';
-    const statusClass = isOnline ? '' : 'offline';
+    let statusClass = isOnline ? '' : 'offline';
+
+    // Determinar clase adicional según terminal y último despacho
+    const terminalClass = getTerminalClass(device);
+    const despachoClass = getDespachoClass(device);
+
+    // Priorizar clases: primero despacho, luego terminal, luego estado online/offline
+    let finalClass = statusClass;
+    if (terminalClass) {
+        finalClass = terminalClass;
+    }
+    if (despachoClass) {
+        finalClass = despachoClass;
+    }
+
+    // Determinar la rotación según el terminal
+    let rotation = position.course || 0;
+    if (device.terminal) {
+        if (device.terminal.toUpperCase() === 'A') {
+            rotation = 0; // Apunta hacia arriba para terminal A (ida)
+        } else if (device.terminal.toUpperCase() === 'B') {
+            rotation = 180; // Apunta hacia abajo para terminal B (vuelta)
+        }
+    }
 
     // Crear HTML para el marcador con etiqueta de nombre
     const iconHtml = `
         <div class="marker-container">
-            <div class="vehicle-marker-icon ${statusClass} ${iconClass}" style="transform: rotate(${position.course || 0}deg);"></div>
+            <div class="vehicle-marker-icon ${finalClass} ${iconClass}" style="transform: rotate(${rotation}deg);"></div>
             <div class="vehicle-name-label">${device.name}</div>
         </div>
     `;
@@ -360,6 +441,12 @@ function updateMarkerPopup(marker, device, position) {
                     <span>${lastUpdate}</span>
                 </div>
                 <!-- Nuevos campos -->
+                <div class="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    <span>Padrón: ${device.padron || 'N/A'}</span>
+                </div>
                 <div class="flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
@@ -449,27 +536,27 @@ function displayRoute(routeData, routeType) {
         console.warn(`No hay datos para mostrar ruta de ${routeType}`);
         return;
     }
-    
+
     /* console.log eliminado */(`Mostrando ruta de ${routeType} con ${routeData.length} puntos`);
-    
+
     // Validación y conversión de puntos
     let validPoints = 0;
     const routePoints = [];
-    
+
     for (let i = 0; i < routeData.length; i++) {
         const point = routeData[i];
-        
+
         // Verificar que el punto tenga coordenadas válidas
-        if (point && typeof point.latitud === 'number' && !isNaN(point.latitud) && 
+        if (point && typeof point.latitud === 'number' && !isNaN(point.latitud) &&
             typeof point.longitud === 'number' && !isNaN(point.longitud)) {
-            
+
             // Verificar rango de coordenadas válido
-            if (point.latitud >= -90 && point.latitud <= 90 && 
+            if (point.latitud >= -90 && point.latitud <= 90 &&
                 point.longitud >= -180 && point.longitud <= 180) {
-                
+
                 routePoints.push(L.latLng(point.latitud, point.longitud));
                 validPoints++;
-                
+
                 // Mostrar algunos puntos de muestra en la consola
                 if (i < 3 || i >= routeData.length - 3 || i % Math.floor(routeData.length / 5) === 0) {
                     /* console.log eliminado */(`Punto ${i}: [${point.latitud}, ${point.longitud}]`);
@@ -481,32 +568,32 @@ function displayRoute(routeData, routeType) {
             console.error(`Punto ${i} inválido:`, point);
         }
     }
-    
+
     /* console.log eliminado */(`Puntos válidos para ${routeType}: ${validPoints} de ${routeData.length}`);
-    
+
     if (routePoints.length < 2) {
         console.error(`No hay suficientes puntos válidos para crear la ruta de ${routeType}`);
         return;
     }
-    
+
     // Definir opciones de estilo para la ruta
     let routeOptions = {
         weight: 5,
         opacity: 0.7,
         smoothFactor: 1
     };
-    
+
     // Asignar colores diferentes según el tipo de ruta
     if (routeType === 'ida') {
         routeOptions.color = '#3388ff'; // Azul para la ruta de ida
-        
+
         // Crear la polilínea para la ruta de ida
         window.rutaIdaPolyline = L.polyline(routePoints, routeOptions);
         window.rutaIdaPolyline.addTo(map);
-        
+
         // Agregar popup con información al hacer clic en la ruta
         window.rutaIdaPolyline.bindPopup('Ruta de Ida');
-        
+
         // Ajustar la vista del mapa para mostrar la ruta completa
         /* console.log eliminado */('Ajustando vista a ruta de ida');
         try {
@@ -523,14 +610,14 @@ function displayRoute(routeData, routeType) {
         }
     } else {
         routeOptions.color = '#ff3333'; // Rojo para la ruta de vuelta
-        
+
         // Crear la polilínea para la ruta de vuelta
         window.rutaVueltaPolyline = L.polyline(routePoints, routeOptions);
         window.rutaVueltaPolyline.addTo(map);
-        
+
         // Agregar popup con información al hacer clic en la ruta
         window.rutaVueltaPolyline.bindPopup('Ruta de Vuelta');
-        
+
         /* console.log eliminado */('Ruta de vuelta añadida al mapa');
     }
 }
@@ -538,21 +625,21 @@ function displayRoute(routeData, routeType) {
 // Función para limpiar las rutas existentes del mapa
 function clearRoutes() {
     /* console.log eliminado */('Limpiando rutas existentes...');
-    
+
     // Eliminar polilínea de la ruta de ida si existe
     if (window.rutaIdaPolyline) {
         window.rutaIdaPolyline.remove();
         window.rutaIdaPolyline = null;
         /* console.log eliminado */('Ruta de ida eliminada');
     }
-    
+
     // Eliminar polilínea de la ruta de vuelta si existe
     if (window.rutaVueltaPolyline) {
         window.rutaVueltaPolyline.remove();
         window.rutaVueltaPolyline = null;
         /* console.log eliminado */('Ruta de vuelta eliminada');
     }
-    
+
     // Eliminar leyenda si existe
     if (window.rutasLegend) {
         window.rutasLegend.remove();
@@ -564,25 +651,25 @@ function clearRoutes() {
 // Función para añadir leyenda de rutas al mapa
 function addRoutesLegend() {
     /* console.log eliminado */('Añadiendo leyenda de rutas completas y variadas...');
-    
+
     // Si ya existe una leyenda, eliminarla
     if (window.rutasLegend) {
         window.rutasLegend.remove();
     }
-    
+
     // Crear la leyenda como un control de Leaflet
     window.rutasLegend = L.control({ position: 'bottomleft' });
-    
+
     window.rutasLegend.onAdd = function(map) {
         const div = L.DomUtil.create('div', 'legend-control');
         div.innerHTML = '<h4 style="margin: 0 0 5px 0; font-weight: bold;">Leyenda de Rutas</h4>';
-        
+
         // Añadir elemento para la ruta de ida
         div.innerHTML += '<div style="display: flex; align-items: center; margin-bottom: 3px;"><div style="width: 20px; height: 3px; background-color: #3388ff; margin-right: 5px;"></div>Ruta de Ida</div>';
-        
+
         // Añadir elemento para la ruta de vuelta
         div.innerHTML += '<div style="display: flex; align-items: center;"><div style="width: 20px; height: 3px; background-color: #ff3333; margin-right: 5px;"></div>Ruta de Vuelta</div>';
-        
+
         // Aplicar estilos CSS para que sea más visible y elegante
         div.style.backgroundColor = 'white';
         div.style.padding = '10px';
@@ -595,21 +682,21 @@ function addRoutesLegend() {
         div.style.minWidth = '150px';
         div.style.maxWidth = '200px';
         div.style.border = '1px solid rgba(0,0,0,0.1)';
-        
+
         // Hacer que la leyenda sea interactiva (no pasar eventos al mapa)
         L.DomEvent.disableClickPropagation(div);
         L.DomEvent.disableScrollPropagation(div);
-        
+
         return div;
     };
-    
+
     window.rutasLegend.addTo(map);
 }
 
 // Función para ocultar los detalles del vehículo
 function hideVehicleDetails() {
     const panel = document.getElementById('vehicle-details-panel');
-    
+
     panel.classList.add('hidden');
 }
 
@@ -649,6 +736,13 @@ function showVehicleDetails(device, position) {
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
                 </svg>
+                <span>Padrón:</span>
+                <span class="font-medium ml-1">${device.padron || 'N/A'}</span>
+            </div>
+            <div class="text-xs flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L10 4.414l6.293 6.293a1 1 0 001.414-1.414l-7-7z" />
+                </svg>
                 <span>Terminal:</span>
                 <span class="font-medium ml-1">${device.terminal || 'N/A'}</span>
             </div>
@@ -660,7 +754,7 @@ function showVehicleDetails(device, position) {
                 <span class="font-medium ml-1">${device.ultimo_despacho ? new Date(device.ultimo_despacho).toLocaleString() : 'N/A'}</span>
             </div>
         </div>
- 
+
 
         <!-- Grupo: Información de Tiempo -->
         <div class="flex flex-col border rounded-lg p-2 bg-base-200">
