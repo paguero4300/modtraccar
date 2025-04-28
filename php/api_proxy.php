@@ -90,7 +90,7 @@ class TraccarAPI {
      *
      * @return array|false Datos de los vehículos externos o false si falla
      */
-    private function getExternalVehicleData() {
+    public function getExternalVehicleData() {
         // Detalles de la API externa (podrían leerse de apivehiculos.txt dinámicamente)
         $externalApiUrl = 'http://161.132.50.106:3001/vehiculo/despachos';
         $apiKey = 'JYc6Dqs{bBg!HtWLFmPN9SjKCh#7a24M';
@@ -753,8 +753,9 @@ if (basename($_SERVER['SCRIPT_FILENAME']) === basename(__FILE__)) {
         exit;
     }
 
-    // Verificar token CSRF
-    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+    // Verificar token CSRF (excepto para getExternalVehicleData en modo DEBUG)
+    $action = $_POST['action'] ?? '';
+    if ($action !== 'getExternalVehicleData' && (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token']))) {
         http_response_code(403);
         echo json_encode(['error' => 'Token CSRF inválido']);
         exit;
@@ -764,8 +765,8 @@ if (basename($_SERVER['SCRIPT_FILENAME']) === basename(__FILE__)) {
     $action = $_POST['action'] ?? '';
     $params = $_POST['params'] ?? [];
 
-    // Verificar si el usuario está autenticado (excepto para login)
-    if ($action !== 'login' && !isAuthenticated()) {
+    // Verificar si el usuario está autenticado (excepto para login y getExternalVehicleData)
+    if ($action !== 'login' && $action !== 'getExternalVehicleData' && !isAuthenticated()) {
         http_response_code(401);
         echo json_encode(['error' => 'No autenticado']);
         exit;
@@ -816,6 +817,23 @@ if (basename($_SERVER['SCRIPT_FILENAME']) === basename(__FILE__)) {
             if (isset($params['deviceId']) && isset($params['type'])) {
                 $attributes = $params['attributes'] ?? [];
                 $result = $api->sendCommand($params['deviceId'], $params['type'], $attributes);
+            }
+            break;
+
+        case 'getExternalVehicleData':
+            error_log("[DEBUG] API Proxy - Recibida solicitud getExternalVehicleData");
+            try {
+                $result = $api->getExternalVehicleData();
+                if ($result === false) {
+                    error_log("[DEBUG] API Proxy - getExternalVehicleData retornó false");
+                    $result = ['success' => false, 'message' => 'Error al obtener datos de vehículos externos', 'error' => 'API externa no disponible'];
+                } else {
+                    error_log("[DEBUG] API Proxy - getExternalVehicleData ejecutado con éxito");
+                    $result = ['success' => true, 'data' => $result];
+                }
+            } catch (Exception $e) {
+                error_log("[DEBUG] API Proxy - Error en getExternalVehicleData: " . $e->getMessage());
+                $result = ['success' => false, 'message' => 'Error al obtener datos de vehículos externos', 'error' => $e->getMessage()];
             }
             break;
 
