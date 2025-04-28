@@ -609,90 +609,13 @@ function addRoutesLegend() {
 // Función para ocultar los detalles del vehículo
 function hideVehicleDetails() {
     const panel = document.getElementById('vehicle-details-panel');
-    const additionalInfoPanel = document.getElementById('additional-info-panel');
     
     panel.classList.add('hidden');
-    if (additionalInfoPanel) {
-        additionalInfoPanel.classList.add('hidden');
-    }
-}
-
-// Función para crear el panel de información adicional
-function createAdditionalInfoPanel() {
-    let panel = document.getElementById('additional-info-panel');
-    if (!panel) {
-        panel = document.createElement('div');
-        panel.id = 'additional-info-panel';
-        panel.className = 'fixed bottom-20 left-4 z-10 w-72 rounded-lg bg-base-100 shadow-lg p-4 border border-base-300';
-        document.body.appendChild(panel);
-    }
-    return panel;
-}
-
-// Función para procesar y mostrar datos externos de vehículos
-function processExternalVehicleData(vehiclesData) {
-    if (!vehiclesData || vehiclesData.length === 0) {
-        return;
-    }
-    
-    console.log('[DEBUG] Procesando datos externos de vehículos:', vehiclesData.length, 'registros');
-    
-    // Crear o actualizar panel de información adicional
-    const panel = document.getElementById('additional-info-panel') || createAdditionalInfoPanel();
-    
-    // Mostrar el panel si está oculto
-    panel.classList.remove('hidden');
-    
-    // Crear contenido HTML para el panel
-    let html = `
-        <h3 class="text-lg font-bold mb-2">Información de Vehículos</h3>
-        <div class="overflow-y-auto max-h-60">
-            <table class="table table-compact w-full">
-                <thead>
-                    <tr>
-                        <th class="text-xs">Placa</th>
-                        <th class="text-xs">Padrón</th>
-                        <th class="text-xs">Terminal</th>
-                        <th class="text-xs">Último Despacho</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    // Agregar filas con datos de vehículos
-    vehiclesData.forEach(vehicle => {
-        html += `
-            <tr>
-                <td class="text-xs">${vehicle.placa || '-'}</td>
-                <td class="text-xs">${vehicle.padron || '-'}</td>
-                <td class="text-xs">${vehicle.terminal || '-'}</td>
-                <td class="text-xs">${vehicle.ultimo_despacho || '-'}</td>
-            </tr>
-        `;
-    });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-        <div class="flex justify-end mt-2">
-            <button id="close-external-data" class="btn btn-xs btn-ghost">Cerrar</button>
-        </div>
-    `;
-    
-    // Actualizar contenido del panel
-    panel.innerHTML = html;
-    
-    // Agregar evento para cerrar el panel
-    document.getElementById('close-external-data').addEventListener('click', () => {
-        panel.classList.add('hidden');
-    });
 }
 
 // Función para mostrar detalles del vehículo en el panel inferior
 function showVehicleDetails(device, position) {
     const panel = document.getElementById('vehicle-details-panel');
-    const additionalInfoPanel = document.getElementById('additional-info-panel') || createAdditionalInfoPanel();
     const nameElement = document.getElementById('vehicle-name-text');
     const detailsElement = document.getElementById('panel-vehicle-details');
 
@@ -710,9 +633,6 @@ function showVehicleDetails(device, position) {
     const movementText = isMoving ? 'En movimiento' : 'Detenido';
 
     const lastUpdate = new Date(position.deviceTime).toLocaleString();
-
-
-
 
     // Generar HTML de detalles agrupados por tipo de datos con títulos descriptivos
     detailsElement.innerHTML = `
@@ -797,7 +717,6 @@ function showVehicleDetails(device, position) {
 
     // Mostrar paneles
     panel.classList.remove('hidden');
-    additionalInfoPanel.classList.remove('hidden');
 
     // Asegurarse de que el panel sea visible
     /* console.log eliminado */('Mostrando panel de detalles para:', device.name);
