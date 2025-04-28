@@ -594,7 +594,7 @@ function clearRoutes() {
 
 // Función para añadir leyenda de rutas al mapa
 function addRoutesLegend() {
-    console.log('Añadiendo leyenda de rutas...');
+    console.log('Añadiendo leyenda de rutas completas y variadas...');
     
     // Si ya existe una leyenda, eliminarla
     if (window.rutasLegend) {
