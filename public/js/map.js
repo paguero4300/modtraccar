@@ -83,13 +83,20 @@ function initMap() {
         // Cargar y mostrar las rutas
         loadRoutes();
 
-        // TEST: Obtener y mostrar datos externos de vehículos en consola
-        apiRequest('getExternalVehicleData', {})
-            .then(response => {
-                console.log('[DEBUG] Datos de vehículos externos:', response);
+        // TEST: Obtener y mostrar datos externos de vehículos en consola usando el script de prueba
+        fetch('test_api_external.php')
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log('[DEBUG] Datos de vehículos externos obtenidos correctamente:', result.data);
+                    // Procesar y mostrar datos si se necesita
+                    processExternalVehicleData(result.data);
+                } else {
+                    console.error('[DEBUG] Error al obtener datos externos:', result);
+                }
             })
             .catch(error => {
-                console.error('[DEBUG] Error al obtener datos de vehículos externos:', error);
+                console.error('[DEBUG] Error en la solicitud de datos externos:', error);
             });
 
         /* console.log eliminado */('Mapa inicializado correctamente');
@@ -600,9 +607,71 @@ function createAdditionalInfoPanel() {
     let panel = document.getElementById('additional-info-panel');
     if (!panel) {
         panel = document.createElement('div');
+        panel.id = 'additional-info-panel';
+        panel.className = 'fixed bottom-20 left-4 z-10 w-72 rounded-lg bg-base-100 shadow-lg p-4 border border-base-300';
         document.body.appendChild(panel);
     }
     return panel;
+}
+
+// Función para procesar y mostrar datos externos de vehículos
+function processExternalVehicleData(vehiclesData) {
+    if (!vehiclesData || vehiclesData.length === 0) {
+        return;
+    }
+    
+    console.log('[DEBUG] Procesando datos externos de vehículos:', vehiclesData.length, 'registros');
+    
+    // Crear o actualizar panel de información adicional
+    const panel = document.getElementById('additional-info-panel') || createAdditionalInfoPanel();
+    
+    // Mostrar el panel si está oculto
+    panel.classList.remove('hidden');
+    
+    // Crear contenido HTML para el panel
+    let html = `
+        <h3 class="text-lg font-bold mb-2">Información de Vehículos</h3>
+        <div class="overflow-y-auto max-h-60">
+            <table class="table table-compact w-full">
+                <thead>
+                    <tr>
+                        <th class="text-xs">Placa</th>
+                        <th class="text-xs">Padrón</th>
+                        <th class="text-xs">Terminal</th>
+                        <th class="text-xs">Último Despacho</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    // Agregar filas con datos de vehículos
+    vehiclesData.forEach(vehicle => {
+        html += `
+            <tr>
+                <td class="text-xs">${vehicle.placa || '-'}</td>
+                <td class="text-xs">${vehicle.padron || '-'}</td>
+                <td class="text-xs">${vehicle.terminal || '-'}</td>
+                <td class="text-xs">${vehicle.ultimo_despacho || '-'}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-end mt-2">
+            <button id="close-external-data" class="btn btn-xs btn-ghost">Cerrar</button>
+        </div>
+    `;
+    
+    // Actualizar contenido del panel
+    panel.innerHTML = html;
+    
+    // Agregar evento para cerrar el panel
+    document.getElementById('close-external-data').addEventListener('click', () => {
+        panel.classList.add('hidden');
+    });
 }
 
 // Función para mostrar detalles del vehículo en el panel inferior
