@@ -559,7 +559,7 @@ $user = $_SESSION['user'];
             </div>
             <div class="modal-action">
                 <form method="dialog">
-                    <button class="btn">Cerrar</button>
+                    <button class="btn">Cerrar </button>
                 </form>
             </div>
         </div>
