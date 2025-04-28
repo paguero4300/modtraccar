@@ -83,6 +83,15 @@ function initMap() {
         // Cargar y mostrar las rutas
         loadRoutes();
 
+        // TEST: Obtener y mostrar datos externos de vehículos en consola
+        apiRequest('getExternalVehicleData', {})
+            .then(response => {
+                console.log('[DEBUG] Datos de vehículos externos:', response);
+            })
+            .catch(error => {
+                console.error('[DEBUG] Error al obtener datos de vehículos externos:', error);
+            });
+
         /* console.log eliminado */('Mapa inicializado correctamente');
 
         // Iniciar WebSocket para actualizaciones en tiempo real
