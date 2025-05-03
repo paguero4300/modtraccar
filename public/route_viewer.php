@@ -42,15 +42,22 @@ $toDateTime = null;
 $routeData = null;
 
 if ($selectedDeviceId) {
+    // Definir zona horaria GMT-5
+    $timezone = new DateTimeZone('America/Lima'); // GMT-5 (Perú, Colombia, Ecuador)
+
     // Extraer horas y minutos
     list($fromHour, $fromMinute) = explode(':', $fromTime);
     list($toHour, $toMinute) = explode(':', $toTime);
 
-    // Convertir fechas a objetos DateTime
-    $fromDateTime = new DateTime($fromDate);
+    // Convertir fechas a objetos DateTime con zona horaria GMT-5
+    $fromDateTime = new DateTime($fromDate, $timezone);
     $fromDateTime->setTime(intval($fromHour), intval($fromMinute), 0);
-    $toDateTime = new DateTime($toDate);
+    $toDateTime = new DateTime($toDate, $timezone);
     $toDateTime->setTime(intval($toHour), intval($toMinute), 59);
+
+    // Convertir a UTC para la API (formato ISO 8601)
+    $fromDateTime->setTimezone(new DateTimeZone('UTC'));
+    $toDateTime->setTimezone(new DateTimeZone('UTC'));
 
     // Formatear para la API
     $fromStr = $fromDateTime->format('Y-m-d\TH:i:s\Z');
@@ -240,7 +247,7 @@ $devicesJson = json_encode($devices);
 <body class="bg-gray-100 m-0 p-0 overflow-hidden">
     <div class="w-full h-screen flex flex-col p-2">
         <div class="flex justify-between items-center mb-2">
-        
+
             <a href="map.php" class="btn btn-primary gap-2 shadow-lg hover:shadow-xl transition-all duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
@@ -504,7 +511,17 @@ $devicesJson = json_encode($devices);
                             </svg>
                             <div>
                                 <div class="text-xs text-gray-500">Período</div>
-                                <div class="font-medium text-sm"><?php echo date('d/m/Y H:i', strtotime($fromDate . ' ' . $fromTime)) . ' - ' . date('d/m/Y H:i', strtotime($toDate . ' ' . $toTime)); ?></div>
+                                <div class="font-medium text-sm">
+                                    <?php
+                                    // Crear objetos DateTime con zona horaria GMT-5
+                                    $timezone = new DateTimeZone('America/Lima'); // GMT-5
+                                    $fromDT = new DateTime($fromDate . ' ' . $fromTime, $timezone);
+                                    $toDT = new DateTime($toDate . ' ' . $toTime, $timezone);
+                                    // Formatear con la zona horaria correcta
+                                    echo $fromDT->format('d/m/Y H:i') . ' - ' . $toDT->format('d/m/Y H:i');
+                                    ?>
+                                    <span class="text-xs text-gray-500">(GMT-5)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -714,21 +731,37 @@ $devicesJson = json_encode($devices);
             }
 
             let fromDate, toDate, fromTime, toTime;
-            const today = new Date();
+
+            // Obtener fecha actual en zona horaria GMT-5
+            const now = new Date();
+            // Ajustar a GMT-5 (considerando que JavaScript usa la zona horaria local del navegador)
+            // Primero obtenemos el offset en minutos entre la zona horaria local y GMT
+            const localOffset = now.getTimezoneOffset();
+            // Luego calculamos el offset para GMT-5 (5 horas = 300 minutos)
+            const targetOffset = 300; // GMT-5 en minutos
+            // Calculamos la diferencia entre el offset local y el target
+            const offsetDiff = targetOffset - localOffset;
+            // Ajustamos la fecha actual con la diferencia de offset
+            const gmt5Date = new Date(now.getTime() - offsetDiff * 60000);
+
+            // Función para formatear fecha en YYYY-MM-DD considerando GMT-5
             const formatDate = date => {
-                return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             };
 
             switch (range) {
                 case 'today':
-                    fromDate = formatDate(today);
-                    toDate = formatDate(today);
+                    fromDate = formatDate(gmt5Date);
+                    toDate = formatDate(gmt5Date);
                     fromTime = '00:00';
                     toTime = '23:59';
                     break;
 
                 case 'yesterday':
-                    const yesterday = new Date(today);
+                    const yesterday = new Date(gmt5Date);
                     yesterday.setDate(yesterday.getDate() - 1);
                     fromDate = formatDate(yesterday);
                     toDate = formatDate(yesterday);
@@ -899,9 +932,22 @@ $devicesJson = json_encode($devices);
         const startMarker = L.marker(startPoint, { icon: startIcon }).addTo(map);
         const endMarker = L.marker(endPoint, { icon: endIcon }).addTo(map);
 
-        // Añadir popups a los marcadores
-        const startTime = new Date(routeData[0].time).toLocaleString();
-        const endTime = new Date(routeData[routeData.length - 1].time).toLocaleString();
+        // Añadir popups a los marcadores con ajuste a GMT-5
+        // Función para formatear fecha en GMT-5
+        function formatDateToGMT5(dateStr) {
+            const date = new Date(dateStr);
+            // Ajustar a GMT-5
+            const localOffset = date.getTimezoneOffset();
+            const targetOffset = 300; // GMT-5 en minutos
+            const offsetDiff = targetOffset - localOffset;
+            const gmt5Date = new Date(date.getTime() - offsetDiff * 60000);
+
+            // Formatear fecha con indicación de zona horaria
+            return gmt5Date.toLocaleString() + ' (GMT-5)';
+        }
+
+        const startTime = formatDateToGMT5(routeData[0].time);
+        const endTime = formatDateToGMT5(routeData[routeData.length - 1].time);
 
         startMarker.bindPopup(`<b>Inicio</b><br>Hora: ${startTime}`);
         endMarker.bindPopup(`<b>Fin</b><br>Hora: ${endTime}`);
@@ -935,7 +981,7 @@ $devicesJson = json_encode($devices);
                 const marker = L.marker([point.latitude, point.longitude], { icon: pointIcon });
 
                 // Crear contenido del popup con DaisyUI
-                const time = new Date(point.time).toLocaleString();
+                const time = formatDateToGMT5(point.time); // Usar la función que ya definimos para GMT-5
                 const speed = (point.speed * 3.6).toFixed(1); // Convertir a km/h
 
                 const popupContent = `
@@ -1023,7 +1069,7 @@ $devicesJson = json_encode($devices);
             const point = routeData[currentPointIndex];
             const heading = calculateHeading(currentPointIndex);
             const speed = (point.speed * 3.6).toFixed(1); // Convertir a km/h
-            const time = new Date(point.time).toLocaleString();
+            const time = formatDateToGMT5(point.time); // Usar la función que ya definimos para GMT-5
 
             // Determinar el color según la velocidad
             let speedColor = '#10b981'; // Verde para velocidad baja
@@ -1149,7 +1195,7 @@ $devicesJson = json_encode($devices);
             // Actualizar datos
             document.getElementById('point-index').textContent = currentPointIndex + 1;
             document.getElementById('point-total').textContent = routeData.length;
-            document.getElementById('point-time').textContent = new Date(point.time).toLocaleString();
+            document.getElementById('point-time').textContent = formatDateToGMT5(point.time);
             document.getElementById('point-lat').textContent = point.latitude.toFixed(6);
             document.getElementById('point-lon').textContent = point.longitude.toFixed(6);
             document.getElementById('point-speed').textContent = (point.speed * 3.6).toFixed(1); // Convertir a km/h
@@ -1292,8 +1338,13 @@ $devicesJson = json_encode($devices);
         // Mostrar información sobre la ruta
         console.log('Ruta cargada con éxito');
         console.log('Puntos:', routePoints.length);
-        console.log('Inicio:', startTime);
-        console.log('Fin:', endTime);
+        console.log('Inicio (GMT-5):', startTime);
+        console.log('Fin (GMT-5):', endTime);
+
+        // Mostrar información sobre el formato de fechas enviado a la API
+        console.log('Formato de fechas enviado a la API:');
+        console.log('From:', '<?php echo $fromStr; ?>'); // Formato ISO 8601 en UTC
+        console.log('To:', '<?php echo $toStr; ?>');
         <?php elseif ($selectedDeviceId): ?>
         // No hay datos de ruta
         console.log('No se encontraron datos de ruta para el período seleccionado');
