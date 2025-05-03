@@ -462,6 +462,40 @@ $user = $_SESSION['user'];
             margin: 10px 0 !important;
         }
 
+        /* Estilos para las geocercas */
+        .geofence-circle {
+            transition: all 0.3s ease;
+        }
+
+        .geofence-polygon {
+            transition: all 0.3s ease;
+        }
+
+        .geofence-rectangle {
+            transition: all 0.3s ease;
+        }
+
+        .geofence-polyline {
+            transition: all 0.3s ease;
+        }
+
+        /* Tooltip para geocercas */
+        .geofence-tooltip {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            padding: 5px 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Efectos de hover para geocercas */
+        .leaflet-interactive:hover {
+            stroke-width: 4px !important;
+            fill-opacity: 0.6 !important;
+        }
+
         /* Tooltip para los botones de filtro */
         .filter-btn {
             position: relative;
@@ -605,6 +639,13 @@ $user = $_SESSION['user'];
             <!-- Mapa -->
             <div id="map-container" class="flex-1 relative">
                 <div id="map" class="h-full w-full"></div>
+
+                <!-- Botón para cargar geocercas -->
+                <button id="load-geofences-btn" class="btn btn-circle btn-sm bg-white shadow-md hover:bg-gray-100 text-gray-700 absolute top-4 right-4 z-10" title="Cargar geocercas">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                    </svg>
+                </button>
 
                 <!-- Leyenda de iconos -->
                 <div class="icon-legend">

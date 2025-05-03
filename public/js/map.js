@@ -38,12 +38,6 @@ function initMap() {
         // Añadir capa base por defecto
         locationIQStreets.addTo(map);
 
-        // Añadir control de capas
-        L.control.layers(baseLayers, null, {
-            position: 'topright',
-            collapsed: true
-        }).addTo(map);
-
         // Añadir control de zoom
         L.control.zoom({
             position: 'topright'
@@ -77,11 +71,28 @@ function initMap() {
         window.rutaVueltaPolyline = null;
         window.rutasLegend = null;
 
+        // Inicializar capa de geocercas
+        window.geofencesLayer = L.layerGroup().addTo(map);
+
+        // Añadir capa de geocercas al control de capas
+        const overlays = {
+            "Geocercas": geofencesLayer
+        };
+
+        // Actualizar control de capas para incluir las capas superpuestas
+        L.control.layers(baseLayers, overlays, {
+            position: 'topright',
+            collapsed: true
+        }).addTo(map);
+
         // Sincronizar tema del mapa con el tema de la aplicación
         syncMapTheme();
 
         // Cargar y mostrar las rutas
         loadRoutes();
+
+        // Cargar y mostrar las geocercas
+        loadGeofences();
 
         // TEST: Obtener y mostrar datos externos de vehículos en consola usando el script de prueba
         fetch('test_api_external.php')
@@ -339,6 +350,429 @@ function getDespachoClass(device) {
     }
 
     return null;
+}
+
+// Cargar geocercas desde la API
+function loadGeofences() {
+    console.log('Iniciando carga de geocercas...');
+
+    // Mostrar mensaje al usuario
+    showToast('Cargando geocercas...', 'info');
+
+    // Usar fetch directamente para depurar la respuesta completa
+    const formData = new FormData();
+    formData.append('csrf_token', config.csrfToken);
+    formData.append('action', 'getGeofences');
+    formData.append('params', JSON.stringify({ all: true }));
+
+    fetch(config.apiUrl, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        // Primero verificar si la respuesta es OK
+        if (!response.ok) {
+            console.error('Error de red al cargar geocercas:', response.status, response.statusText);
+            throw new Error('Error de red: ' + response.status);
+        }
+
+        // Intentar parsear como JSON
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.success && data.data) {
+            console.log('Geocercas cargadas correctamente:', data.data.length);
+            displayGeofences(data.data);
+            showToast('Se han cargado ' + data.data.length + ' geocercas', 'success');
+        } else {
+            console.error('Error en la respuesta de geocercas:', data);
+            showToast('Error al cargar geocercas: ' + (data.message || 'Formato de respuesta incorrecto'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error al procesar geocercas:', error);
+        showToast('Error al cargar geocercas: ' + error.message, 'error');
+    });
+}
+
+// Mostrar geocercas en el mapa
+function displayGeofences(geofences) {
+    // Limpiar capa de geocercas
+    geofencesLayer.clearLayers();
+
+    // Verificar si hay geocercas
+    if (!geofences || !Array.isArray(geofences) || geofences.length === 0) {
+        console.log('No hay geocercas para mostrar');
+        showToast('No hay geocercas disponibles', 'warning');
+        return;
+    }
+
+    console.log('Procesando ' + geofences.length + ' geocercas');
+
+    // Contador de geocercas procesadas correctamente
+    let processedCount = 0;
+
+    // Colores más visibles para las geocercas (rojo, verde, morado)
+    const geofenceColors = [
+        { stroke: '#FF5252', fill: '#FF5252' }, // Rojo
+        { stroke: '#4CAF50', fill: '#4CAF50' }, // Verde
+        { stroke: '#9C27B0', fill: '#9C27B0' }  // Morado
+    ];
+
+    // Procesar cada geocerca
+    geofences.forEach((geofence, index) => {
+        try {
+
+            // Verificar si la geocerca tiene un área definida
+            if (!geofence.area) {
+                console.warn(`Geocerca ${index + 1} no tiene área definida`);
+                return;
+            }
+
+            // Parsear el área de la geocerca
+            let area;
+
+            // Verificar si el área está en formato WKT (Well-Known Text) o JSON
+            if (typeof geofence.area === 'string') {
+                const wktString = geofence.area.trim();
+
+                // Detectar el tipo de geometría WKT
+                if (wktString.startsWith('POLYGON')) {
+                    // Formato WKT POLYGON detectado
+                    console.log(`🌍 GEOCERCAS: Detectado formato WKT POLYGON para geocerca ${index + 1}`);
+
+                    try {
+                        // Extraer las coordenadas del polígono WKT
+                        const coordsMatch = wktString.match(/POLYGON\s*\(\((.*)\)\)/);
+
+                        if (!coordsMatch || !coordsMatch[1]) {
+                            console.error(`Formato WKT inválido para geocerca ${index + 1}`);
+                            return;
+                        }
+
+                        // Parsear las coordenadas
+                        const coordPairs = coordsMatch[1].split(',').map(pair => {
+                            // En WKT, el formato es "lat lon" (primero latitud, luego longitud)
+                            const parts = pair.trim().split(' ');
+                            if (parts.length >= 2) {
+                                const lat = parseFloat(parts[0]);
+                                const lon = parseFloat(parts[1]);
+                                if (!isNaN(lat) && !isNaN(lon)) {
+                                    return { latitude: lat, longitude: lon };
+                                }
+                            }
+                            console.warn(`Par de coordenadas WKT inválido`);
+                            return null;
+                        }).filter(coord => coord !== null);
+
+                        // Crear un objeto de área compatible
+                        area = {
+                            type: 'POLYGON',
+                            coordinates: coordPairs
+                        };
+
+                        console.log(`🌍 GEOCERCAS: Convertido WKT POLYGON a formato interno con ${coordPairs.length} puntos`);
+                    } catch (wktError) {
+                        console.error(`Error al procesar WKT POLYGON para geocerca ${index + 1}:`, wktError);
+                        return;
+                    }
+                } else if (wktString.startsWith('CIRCLE')) {
+                    // Formato WKT CIRCLE detectado
+                    console.log(`🌍 GEOCERCAS: Detectado formato WKT CIRCLE para geocerca ${index + 1}`);
+
+                    try {
+                        // Extraer el centro y el radio del círculo WKT
+                        // Formato esperado: CIRCLE (lon lat, radius)
+                        const circleMatch = wktString.match(/CIRCLE\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*,\s*([\d.]+)\s*\)/);
+
+                        if (!circleMatch || circleMatch.length < 4) {
+                            console.error(`Formato WKT CIRCLE inválido para geocerca ${index + 1}`);
+                            return;
+                        }
+
+                        // En WKT, el formato es "lat lon" (primero latitud, luego longitud)
+                        const lat = parseFloat(circleMatch[1]);
+                        const lon = parseFloat(circleMatch[2]);
+                        const radius = parseFloat(circleMatch[3]);
+
+                        // Crear un objeto de área compatible
+                        area = {
+                            type: 'CIRCLE',
+                            center: { latitude: lat, longitude: lon },
+                            radius: radius
+                        };
+
+                        console.log(`🌍 GEOCERCAS: Convertido WKT CIRCLE a formato interno: centro [${lat}, ${lon}], radio ${radius}m`);
+                    } catch (wktError) {
+                        console.error(`Error al procesar WKT CIRCLE para geocerca ${index + 1}:`, wktError);
+                        return;
+                    }
+                } else if (wktString.startsWith('LINESTRING')) {
+                    // Formato WKT LINESTRING detectado
+                    console.log(`🌍 GEOCERCAS: Detectado formato WKT LINESTRING para geocerca ${index + 1}`);
+
+                    try {
+                        // Extraer las coordenadas de la línea WKT
+                        const coordsMatch = wktString.match(/LINESTRING\s*\((.*)\)/);
+
+                        if (!coordsMatch || !coordsMatch[1]) {
+                            console.error(`Formato WKT LINESTRING inválido para geocerca ${index + 1}`);
+                            return;
+                        }
+
+                        // Parsear las coordenadas
+                        const coordPairs = coordsMatch[1].split(',').map(pair => {
+                            // En WKT, el formato es "lat lon" (primero latitud, luego longitud)
+                            const parts = pair.trim().split(' ');
+                            if (parts.length >= 2) {
+                                const lat = parseFloat(parts[0]);
+                                const lon = parseFloat(parts[1]);
+                                if (!isNaN(lat) && !isNaN(lon)) {
+                                    return { latitude: lat, longitude: lon };
+                                }
+                            }
+                            console.warn(`Par de coordenadas WKT inválido para LINESTRING`);
+                            return null;
+                        }).filter(coord => coord !== null);
+
+                        // Crear un objeto de área compatible (trataremos la línea como un polígono)
+                        area = {
+                            type: 'POLYLINE',
+                            coordinates: coordPairs
+                        };
+
+                        console.log(`🌍 GEOCERCAS: Convertido WKT LINESTRING a formato interno con ${coordPairs.length} puntos`);
+                    } catch (wktError) {
+                        console.error(`Error al procesar WKT LINESTRING para geocerca ${index + 1}:`, wktError);
+                        return;
+                    }
+                } else {
+                    // Intentar parsear como JSON
+                    try {
+                        area = JSON.parse(geofence.area);
+                    } catch (parseError) {
+                        console.error(`Formato no reconocido para geocerca ${index + 1}`);
+                        return;
+                    }
+                }
+            } else if (geofence.area && typeof geofence.area === 'object') {
+                // Si ya es un objeto, usarlo directamente
+                area = geofence.area;
+            } else {
+                // Intentar parsear como JSON
+                try {
+                    area = JSON.parse(geofence.area);
+                } catch (parseError) {
+                    console.error(`Error al parsear el área de la geocerca ${index + 1}:`, parseError);
+                    return;
+                }
+            }
+
+            // Verificar si el área tiene un tipo válido
+            if (!area.type) {
+                console.warn(`Geocerca ${index + 1} no tiene tipo de área definido`);
+                return;
+            }
+
+            // Seleccionar color basado en el índice (rotación de colores)
+            const colorIndex = index % geofenceColors.length;
+            const color = geofenceColors[colorIndex];
+
+            // Crear capa según el tipo de geocerca
+            let layer;
+
+            switch (area.type) {
+                case 'CIRCLE':
+                    // Verificar si el círculo tiene centro y radio
+                    if (!area.center || !area.radius) {
+                        console.warn(`Círculo ${index + 1} no tiene centro o radio definido`);
+                        return;
+                    }
+
+                    // Crear círculo con el centro y radio especificados
+
+                    // Crear círculo
+                    // Leaflet usa [lat, lng] y nuestras coordenadas ya están en ese formato
+                    layer = L.circle([area.center.latitude, area.center.longitude], {
+                        radius: area.radius,
+                        color: color.stroke,
+                        fillColor: color.fill,
+                        fillOpacity: 0.4,
+                        weight: 3,
+                        className: 'geofence-circle'
+                    });
+                    break;
+
+                case 'POLYGON':
+                    // Verificar si el polígono tiene coordenadas
+                    if (!area.coordinates || !Array.isArray(area.coordinates) || area.coordinates.length < 3) {
+                        console.warn(`Polígono ${index + 1} no tiene suficientes coordenadas`);
+                        return;
+                    }
+
+                    // Crear polígono
+                    const coordinates = area.coordinates.map(coord => {
+                        // Verificar si las coordenadas tienen el formato correcto
+                        if (typeof coord.latitude === 'number' && typeof coord.longitude === 'number') {
+                            // Leaflet usa [lat, lng] y nuestras coordenadas ya están en ese formato
+                            return [coord.latitude, coord.longitude];
+                        } else if (Array.isArray(coord) && coord.length >= 2) {
+                            // Si es un array, asumir que es [lat, lng]
+                            return [coord[0], coord[1]];
+                        } else {
+                            console.warn(`Formato de coordenada inválido`);
+                            // Devolver una coordenada por defecto para evitar errores
+                            return [0, 0];
+                        }
+                    });
+
+                    // Crear polígono con las coordenadas
+
+                    // Verificar si las coordenadas son válidas (no son todas 0,0)
+                    const hasValidCoords = coordinates.some(coord =>
+                        coord[0] !== 0 || coord[1] !== 0
+                    );
+
+                    if (!hasValidCoords) {
+                        console.warn(`🌍 GEOCERCAS: Polígono ${index + 1} no tiene coordenadas válidas`);
+                        return;
+                    }
+
+                    layer = L.polygon(coordinates, {
+                        color: color.stroke,
+                        fillColor: color.fill,
+                        fillOpacity: 0.4,
+                        weight: 3,
+                        className: 'geofence-polygon'
+                    });
+                    break;
+
+                case 'RECTANGLE':
+                    // Verificar si el rectángulo tiene coordenadas
+                    if (!area.coordinates || !Array.isArray(area.coordinates) || area.coordinates.length < 2) {
+                        console.warn(`Rectángulo ${index + 1} no tiene suficientes coordenadas`);
+                        return;
+                    }
+
+                    // Crear rectángulo con las coordenadas especificadas
+
+                    // Crear rectángulo
+                    // Leaflet usa [lat, lng] y nuestras coordenadas ya están en ese formato
+                    const bounds = L.latLngBounds(
+                        [area.coordinates[0].latitude, area.coordinates[0].longitude],
+                        [area.coordinates[1].latitude, area.coordinates[1].longitude]
+                    );
+                    layer = L.rectangle(bounds, {
+                        color: color.stroke,
+                        fillColor: color.fill,
+                        fillOpacity: 0.4,
+                        weight: 3,
+                        className: 'geofence-rectangle'
+                    });
+                    break;
+
+                case 'POLYLINE':
+                    // Verificar si la polilínea tiene coordenadas
+                    if (!area.coordinates || !Array.isArray(area.coordinates) || area.coordinates.length < 2) {
+                        console.warn(`Polilínea ${index + 1} no tiene suficientes coordenadas`);
+                        return;
+                    }
+
+                    // Crear polilínea
+                    const polylineCoords = area.coordinates.map(coord => {
+                        // Verificar si las coordenadas tienen el formato correcto
+                        if (typeof coord.latitude === 'number' && typeof coord.longitude === 'number') {
+                            // Leaflet usa [lat, lng] y nuestras coordenadas ya están en ese formato
+                            return [coord.latitude, coord.longitude];
+                        } else if (Array.isArray(coord) && coord.length >= 2) {
+                            // Si es un array, asumir que es [lat, lng]
+                            return [coord[0], coord[1]];
+                        } else {
+                            console.warn(`Formato de coordenada inválido para polilínea`);
+                            // Devolver una coordenada por defecto para evitar errores
+                            return [0, 0];
+                        }
+                    });
+
+                    // Crear polilínea con las coordenadas
+
+                    layer = L.polyline(polylineCoords, {
+                        color: color.stroke,
+                        weight: 4,
+                        opacity: 0.8,
+                        lineJoin: 'round',
+                        lineCap: 'round',
+                        className: 'geofence-polyline'
+                    });
+                    break;
+
+                default:
+                    console.warn(`Tipo de geocerca no soportado (${index + 1}): ${area.type}`);
+                    return;
+            }
+
+            // Añadir popup con información
+            layer.bindPopup(`
+                <div class="p-3 bg-white rounded-lg shadow-md">
+                    <h3 class="font-bold text-lg text-gray-800 mb-1">${geofence.name || 'Sin nombre'}</h3>
+                    <p class="text-sm text-gray-600">${geofence.description || 'Sin descripción'}</p>
+                    <div class="text-xs text-gray-500 mt-2">ID: ${geofence.id}</div>
+                </div>
+            `);
+
+            // Añadir tooltip para mostrar el nombre al pasar el mouse
+            layer.bindTooltip(geofence.name || 'Geocerca', {
+                permanent: false,
+                direction: 'top',
+                className: 'geofence-tooltip'
+            });
+
+            // Añadir capa a la capa de geocercas
+            geofencesLayer.addLayer(layer);
+            processedCount++;
+
+        } catch (error) {
+            console.error(`Error al procesar geocerca ${index + 1}:`, error);
+        }
+    });
+
+    console.log(`${processedCount} de ${geofences.length} geocercas mostradas correctamente`);
+
+    // Si no se procesó ninguna geocerca, mostrar un mensaje
+    if (processedCount === 0) {
+        showToast('No se pudieron mostrar las geocercas', 'warning');
+    } else {
+        // Hacer zoom a las geocercas si hay alguna
+        try {
+            // Crear un grupo de límites para todas las capas
+            const bounds = L.latLngBounds([]);
+
+            // Iterar sobre todas las capas en geofencesLayer
+            geofencesLayer.eachLayer(layer => {
+                // Verificar si la capa tiene un método getBounds
+                if (typeof layer.getBounds === 'function') {
+                    bounds.extend(layer.getBounds());
+                }
+                // Para círculos que no tienen getBounds pero tienen getLatLng y getRadius
+                else if (typeof layer.getLatLng === 'function' && typeof layer.getRadius === 'function') {
+                    const center = layer.getLatLng();
+                    const radius = layer.getRadius();
+                    bounds.extend([center.lat + 0.01, center.lng + 0.01]);
+                    bounds.extend([center.lat - 0.01, center.lng - 0.01]);
+                }
+            });
+
+            if (bounds.isValid()) {
+                console.log('Ajustando vista a las geocercas');
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        } catch (error) {
+            console.warn('No se pudo ajustar la vista a las geocercas:', error);
+        }
+    }
 }
 
 // Actualizar el icono del marcador
@@ -1726,8 +2160,18 @@ function exitRouteMode() {
     showToast('Volviendo a la vista normal', 'info');
 }
 
-// Inicializar eventos para el modal de ruta
+// Inicializar eventos para el botón de geocercas
 document.addEventListener('DOMContentLoaded', function() {
+    // Botón para cargar geocercas
+    const loadGeofencesBtn = document.getElementById('load-geofences-btn');
+    if (loadGeofencesBtn) {
+        loadGeofencesBtn.addEventListener('click', function() {
+            console.log('%c🌍 GEOCERCAS: Botón de carga de geocercas pulsado', 'background: #4CAF50; color: white; padding: 2px 5px; border-radius: 3px;');
+            showToast('Cargando geocercas...', 'info');
+            loadGeofences();
+        });
+    }
+
     // Botón para cargar ruta con fechas personalizadas
     document.getElementById('btn-load-route').addEventListener('click', function() {
         const deviceId = parseInt(document.getElementById('route-device-id').value);

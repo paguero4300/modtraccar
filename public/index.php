@@ -73,7 +73,7 @@ if (isAuthenticated()) {
                 <label class="label">
                     <span class="label-text">Correo electrónico</span>
                 </label>
-                <input type="email" name="email" placeholder="usuario@ejemplo.com" class="input input-bordered" required value="<?php echo DEFAULT_EMAIL; ?>">
+                <input  name="email" placeholder="usuario@ejemplo.com" class="input input-bordered" required value="<?php echo DEFAULT_EMAIL; ?>">
             </div>
 
             <div class="form-control">

@@ -283,6 +283,50 @@ class TraccarAPI {
     }
 
     /**
+     * Obtiene las geocercas disponibles
+     *
+     * @param int|null $deviceId ID del dispositivo (opcional)
+     * @param int|null $groupId ID del grupo (opcional)
+     * @param bool|null $all Obtener todas las geocercas (solo para administradores)
+     * @return array|false Lista de geocercas o false si falla
+     */
+    public function getGeofences($deviceId = null, $groupId = null, $all = null) {
+        $params = [];
+
+        if ($deviceId !== null) {
+            $params['deviceId'] = $deviceId;
+        }
+
+        if ($groupId !== null) {
+            $params['groupId'] = $groupId;
+        }
+
+        if ($all !== null) {
+            $params['all'] = $all ? 'true' : 'false';
+        }
+
+        $url = '/geofences';
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
+        }
+
+        // Registrar la solicitud para depuración
+        error_log("[DEBUG] TraccarAPI::getGeofences - Solicitando geocercas con URL: {$url}");
+
+        // Usar el método request con cabeceras específicas para asegurar JSON
+        $result = $this->request('GET', $url);
+
+        // Registrar el resultado
+        if (is_array($result)) {
+            error_log("[DEBUG] TraccarAPI::getGeofences - Se obtuvieron " . count($result) . " geocercas");
+        } else {
+            error_log("[DEBUG] TraccarAPI::getGeofences - Error al obtener geocercas");
+        }
+
+        return $result;
+    }
+
+    /**
      * Envía un comando a un dispositivo
      *
      * @param int $deviceId ID del dispositivo
@@ -777,6 +821,13 @@ if (basename($_SERVER['SCRIPT_FILENAME']) === basename(__FILE__)) {
             if (isset($params['deviceId'])) {
                 $result = $api->getCommandTypes($params['deviceId']);
             }
+            break;
+
+        case 'getGeofences':
+            $deviceId = $params['deviceId'] ?? null;
+            $groupId = $params['groupId'] ?? null;
+            $all = isset($params['all']) ? filter_var($params['all'], FILTER_VALIDATE_BOOLEAN) : null;
+            $result = $api->getGeofences($deviceId, $groupId, $all);
             break;
 
         case 'sendCommand':
