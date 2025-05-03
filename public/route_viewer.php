@@ -30,9 +30,11 @@ usort($devices, function($a, $b) {
 // Obtener parámetros de la URL
 $selectedDeviceId = isset($_GET['deviceId']) ? intval($_GET['deviceId']) : null;
 
-// Por defecto, usar el día actual para ambas fechas
-$fromDate = isset($_GET['from']) ? $_GET['from'] : date('Y-m-d');
-$toDate = isset($_GET['to']) ? $_GET['to'] : date('Y-m-d');
+// Procesar parámetros de fecha y hora
+$fromDate = isset($_GET['from_date']) ? $_GET['from_date'] : (isset($_GET['from']) ? $_GET['from'] : date('Y-m-d'));
+$toDate = isset($_GET['to_date']) ? $_GET['to_date'] : (isset($_GET['to']) ? $_GET['to'] : date('Y-m-d'));
+$fromTime = isset($_GET['from_time']) ? $_GET['from_time'] : '00:00';
+$toTime = isset($_GET['to_time']) ? $_GET['to_time'] : '23:59';
 
 // Formatear fechas para la API si se ha seleccionado un dispositivo
 $fromDateTime = null;
@@ -40,11 +42,15 @@ $toDateTime = null;
 $routeData = null;
 
 if ($selectedDeviceId) {
+    // Extraer horas y minutos
+    list($fromHour, $fromMinute) = explode(':', $fromTime);
+    list($toHour, $toMinute) = explode(':', $toTime);
+
     // Convertir fechas a objetos DateTime
     $fromDateTime = new DateTime($fromDate);
-    $fromDateTime->setTime(0, 0, 0);
+    $fromDateTime->setTime(intval($fromHour), intval($fromMinute), 0);
     $toDateTime = new DateTime($toDate);
-    $toDateTime->setTime(23, 59, 59);
+    $toDateTime->setTime(intval($toHour), intval($toMinute), 59);
 
     // Formatear para la API
     $fromStr = $fromDateTime->format('Y-m-d\TH:i:s\Z');
@@ -76,6 +82,9 @@ if (!isset($_SESSION[CSRF_TOKEN_NAME])) {
     $_SESSION[CSRF_TOKEN_NAME] = bin2hex(random_bytes(32));
 }
 $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
+
+// Preparar datos de vehículos para JavaScript
+$devicesJson = json_encode($devices);
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -231,12 +240,7 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
 <body class="bg-gray-100 m-0 p-0 overflow-hidden">
     <div class="w-full h-screen flex flex-col p-2">
         <div class="flex justify-between items-center mb-2">
-            <h1 class="text-2xl font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-primary">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
-                </svg>
-                Visualizador de Rutas
-            </h1>
+        
             <a href="map.php" class="btn btn-primary gap-2 shadow-lg hover:shadow-xl transition-all duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
@@ -248,113 +252,201 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
         <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 h-full overflow-hidden">
             <!-- Panel de control -->
             <div class="bg-white p-4 rounded-lg shadow-md h-full overflow-y-auto">
-                <h2 class="text-xl font-bold mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                <h2 class="text-xl font-bold mb-4 flex items-center text-primary">
+                    <!-- Heroicon: map -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 10V9" />
                     </svg>
-                    Seleccionar Vehículo y Fechas
+                    Visualizador de Rutas
                 </h2>
 
                 <form action="" method="get" class="space-y-4">
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    <div class="bg-base-100 p-3 rounded-lg border border-base-200 shadow-sm">
+                        <label class="label pb-1">
+                            <span class="label-text font-semibold flex items-center text-base-content">
+                                <!-- Heroicon: truck -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 16v-8h-8" />
+                                    <path d="M19 7c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h2" />
+                                    <path d="M13 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
+                                    <path d="M7 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
                                 </svg>
-                                Vehículo
+                                Seleccionar Vehículo
                             </span>
                         </label>
                         <div class="relative">
-                            <select name="deviceId" class="select select-bordered w-full pl-10" required>
-                                <option value="" disabled <?php echo !$selectedDeviceId ? 'selected' : ''; ?>>Seleccione un vehículo</option>
-                                <?php foreach ($devices as $device): ?>
-                                    <option value="<?php echo $device['id']; ?>" <?php echo $selectedDeviceId == $device['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($device['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" id="vehicle-search" class="input input-bordered w-full pl-10 bg-white focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Buscar vehículo..." autocomplete="off">
+                            <input type="hidden" name="deviceId" id="deviceId" value="<?php echo $selectedDeviceId; ?>" required>
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                                <!-- Heroicon: search -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.3-4.3" />
                                 </svg>
+                            </div>
+                            <div id="vehicle-dropdown" class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg hidden max-h-60 overflow-y-auto border border-base-200">
+                                <ul class="py-1 text-sm text-gray-700">
+                                    <!-- Los resultados de búsqueda se mostrarán aquí -->
+                                </ul>
+                            </div>
+                            <?php if ($selectedDeviceId): ?>
+                            <div class="mt-2 p-3 bg-primary/10 rounded-md border border-primary/20">
+                                <div class="flex items-center">
+                                    <!-- Heroicon: truck -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M16 16v-8h-8" />
+                                        <path d="M19 7c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h2" />
+                                        <path d="M13 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
+                                        <path d="M7 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
+                                    </svg>
+                                    <span class="font-medium text-primary"><?php echo htmlspecialchars($selectedDeviceName); ?></span>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="bg-base-100 p-3 rounded-lg border border-base-200 shadow-sm mt-4">
+                        <label class="label pb-1">
+                            <span class="label-text font-semibold flex items-center text-base-content">
+                                <!-- Heroicon: calendar -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                Rangos Predefinidos
+                            </span>
+                        </label>
+
+                        <div class="grid grid-cols-2 gap-3 mt-1" id="predefined-ranges">
+                            <a href="#" onclick="goToDateRange('today'); return false;" class="btn btn-sm bg-white hover:bg-primary hover:text-white text-primary border-primary/30 transition-all duration-200 shadow-sm" id="btn-today">
+                                <!-- Heroicon: calendar-days -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                    <circle cx="12" cy="16" r="2" />
+                                </svg>
+                                Hoy
+                            </a>
+                            <a href="#" onclick="goToDateRange('yesterday'); return false;" class="btn btn-sm bg-white hover:bg-primary hover:text-white text-primary border-primary/30 transition-all duration-200 shadow-sm" id="btn-yesterday">
+                                <!-- Heroicon: calendar -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                </svg>
+                                Ayer
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-base-100 p-3 rounded-lg border border-base-200 shadow-sm mt-4">
+                        <label class="label pb-1">
+                            <span class="label-text font-semibold flex items-center text-base-content">
+                                <!-- Heroicon: calendar-days -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                    <line x1="8" y1="14" x2="8" y2="14.01" />
+                                    <line x1="12" y1="14" x2="12" y2="14.01" />
+                                    <line x1="16" y1="14" x2="16" y2="14.01" />
+                                    <line x1="8" y1="18" x2="8" y2="18.01" />
+                                    <line x1="12" y1="18" x2="12" y2="18.01" />
+                                    <line x1="16" y1="18" x2="16" y2="18.01" />
+                                </svg>
+                                Rango Personalizado
+                            </span>
+                        </label>
+
+                        <div class="mt-2 space-y-3">
+                            <div class="flex items-center">
+                                <div class="w-16 flex-shrink-0">
+                                    <span class="text-sm font-medium flex items-center text-base-content">
+                                        <!-- Heroicon: arrow-down -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 5v14" />
+                                            <path d="m19 12-7 7-7-7" />
+                                        </svg>
+                                        Desde
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 flex-1">
+                                    <div class="relative">
+                                        <input type="date" name="from_date" value="<?php echo $fromDate; ?>" class="input input-bordered input-sm w-full pl-8 bg-white focus:ring-2 focus:ring-primary/20 transition-all" required>
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                            <!-- Heroicon: calendar -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="time" name="from_time" value="<?php echo isset($_GET['from_time']) ? $_GET['from_time'] : '00:00'; ?>" class="input input-bordered input-sm w-full pl-8 bg-white focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                            <!-- Heroicon: clock -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <polyline points="12 6 12 12 16 14" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center">
+                                <div class="w-16 flex-shrink-0">
+                                    <span class="text-sm font-medium flex items-center text-base-content">
+                                        <!-- Heroicon: arrow-up -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 19V5" />
+                                            <path d="m5 12 7-7 7 7" />
+                                        </svg>
+                                        Hasta
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 flex-1">
+                                    <div class="relative">
+                                        <input type="date" name="to_date" value="<?php echo $toDate; ?>" class="input input-bordered input-sm w-full pl-8 bg-white focus:ring-2 focus:ring-primary/20 transition-all" required>
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                            <!-- Heroicon: calendar -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="time" name="to_time" value="<?php echo isset($_GET['to_time']) ? $_GET['to_time'] : '23:59'; ?>" class="input input-bordered input-sm w-full pl-8 bg-white focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                                            <!-- Heroicon: clock -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <polyline points="12 6 12 12 16 14" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="divider">Rangos Predefinidos</div>
-
-                    <div class="grid grid-cols-2 gap-2" id="predefined-ranges">
-                        <a href="#" onclick="goToDateRange('today'); return false;" class="btn btn-sm btn-outline" id="btn-today">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
-                            </svg>
-                            Hoy
-                        </a>
-                        <a href="#" onclick="goToDateRange('yesterday'); return false;" class="btn btn-sm btn-outline" id="btn-yesterday">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
-                            </svg>
-                            Ayer
-                        </a>
-                        <a href="#" onclick="goToDateRange('week'); return false;" class="btn btn-sm btn-outline" id="btn-week">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5m-6-1.5h.008v.008H12v-.008ZM12 15h.008v.008H12V15Z" />
-                            </svg>
-                            Última Semana
-                        </a>
-                        <a href="#" onclick="goToDateRange('month'); return false;" class="btn btn-sm btn-outline" id="btn-month">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                            </svg>
-                            Último Mes
-                        </a>
-                    </div>
-
-                    <div class="divider">Rango Personalizado</div>
-
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
-                                </svg>
-                                Desde
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <input type="date" name="from" value="<?php echo $fromDate; ?>" class="input input-bordered w-full pl-10" required>
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
-                                </svg>
-                                Hasta
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <input type="date" name="to" value="<?php echo $toDate; ?>" class="input input-bordered w-full pl-10" required>
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-control">
-                        <button type="submit" class="btn btn-primary w-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary w-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200">
+                            <!-- Heroicon: map -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-1.447-.894L15 9m0 10V9" />
                             </svg>
                             Mostrar Ruta
                         </button>
@@ -362,38 +454,59 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
                 </form>
 
                 <?php if ($selectedDeviceId && $routeData): ?>
-                <div class="divider">Información</div>
-
-                <div class="stats stats-vertical shadow w-full">
-                    <div class="stat">
-                        <div class="stat-title flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                <div class="bg-base-100 p-3 rounded-lg border border-base-200 shadow-sm mt-4">
+                    <label class="label pb-1">
+                        <span class="label-text font-semibold flex items-center text-base-content">
+                            <!-- Heroicon: information-circle -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="16" x2="12" y2="12" />
+                                <line x1="12" y1="8" x2="12.01" y2="8" />
                             </svg>
-                            Vehículo
-                        </div>
-                        <div class="stat-value text-lg"><?php echo htmlspecialchars($selectedDeviceName); ?></div>
-                    </div>
+                            Información de la Ruta
+                        </span>
+                    </label>
 
-                    <div class="stat">
-                        <div class="stat-title flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                    <div class="grid grid-cols-1 gap-2 mt-1">
+                        <div class="bg-white p-2 rounded-md border border-base-200 flex items-center">
+                            <!-- Heroicon: truck -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 16v-8h-8" />
+                                <path d="M19 7c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h2" />
+                                <path d="M13 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
+                                <path d="M7 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z" />
                             </svg>
-                            Puntos
+                            <div>
+                                <div class="text-xs text-gray-500">Vehículo</div>
+                                <div class="font-medium"><?php echo htmlspecialchars($selectedDeviceName); ?></div>
+                            </div>
                         </div>
-                        <div class="stat-value text-lg"><?php echo count($routeData); ?></div>
-                    </div>
 
-                    <div class="stat">
-                        <div class="stat-title flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v7.5" />
+                        <div class="bg-white p-2 rounded-md border border-base-200 flex items-center">
+                            <!-- Heroicon: map-pin -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                <circle cx="12" cy="10" r="3" />
                             </svg>
-                            Período
+                            <div>
+                                <div class="text-xs text-gray-500">Puntos GPS</div>
+                                <div class="font-medium"><?php echo count($routeData); ?> puntos</div>
+                            </div>
                         </div>
-                        <div class="stat-value text-lg"><?php echo date('d/m/Y', strtotime($fromDate)) . ' - ' . date('d/m/Y', strtotime($toDate)); ?></div>
+
+                        <div class="bg-white p-2 rounded-md border border-base-200 flex items-center">
+                            <!-- Heroicon: calendar -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <div>
+                                <div class="text-xs text-gray-500">Período</div>
+                                <div class="font-medium text-sm"><?php echo date('d/m/Y H:i', strtotime($fromDate . ' ' . $fromTime)) . ' - ' . date('d/m/Y H:i', strtotime($toDate . ' ' . $toTime)); ?></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -558,6 +671,9 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
     </div>
 
     <script>
+        // Datos de vehículos
+        const devices = <?php echo $devicesJson; ?>;
+
         // Inicializar mapa
         const map = L.map('map').setView([<?php echo MAP_DEFAULT_LAT; ?>, <?php echo MAP_DEFAULT_LON; ?>], <?php echo MAP_DEFAULT_ZOOM; ?>);
 
@@ -570,11 +686,11 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
 
         // Función para manejar los botones de rangos predefinidos
         function handlePredefinedRangeButtons() {
-            const deviceSelect = document.querySelector('select[name=deviceId]');
+            const deviceIdInput = document.getElementById('deviceId');
             const rangeButtons = document.querySelectorAll('#predefined-ranges a');
 
             // Verificar si hay un dispositivo seleccionado
-            const isDeviceSelected = deviceSelect.value !== '';
+            const isDeviceSelected = deviceIdInput.value !== '';
 
             // Habilitar o deshabilitar botones según si hay un dispositivo seleccionado
             rangeButtons.forEach(button => {
@@ -590,14 +706,14 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
 
         // Función para ir a un rango de fechas predefinido
         function goToDateRange(range) {
-            const deviceId = document.querySelector('select[name=deviceId]').value;
+            const deviceId = document.getElementById('deviceId').value;
 
             if (!deviceId) {
                 alert('Por favor, seleccione un vehículo primero');
                 return;
             }
 
-            let fromDate, toDate;
+            let fromDate, toDate, fromTime, toTime;
             const today = new Date();
             const formatDate = date => {
                 return date.toISOString().split('T')[0]; // Formato YYYY-MM-DD
@@ -607,6 +723,8 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
                 case 'today':
                     fromDate = formatDate(today);
                     toDate = formatDate(today);
+                    fromTime = '00:00';
+                    toTime = '23:59';
                     break;
 
                 case 'yesterday':
@@ -614,33 +732,111 @@ $csrfToken = $_SESSION[CSRF_TOKEN_NAME];
                     yesterday.setDate(yesterday.getDate() - 1);
                     fromDate = formatDate(yesterday);
                     toDate = formatDate(yesterday);
-                    break;
-
-                case 'week':
-                    const weekAgo = new Date(today);
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    fromDate = formatDate(weekAgo);
-                    toDate = formatDate(today);
-                    break;
-
-                case 'month':
-                    const monthAgo = new Date(today);
-                    monthAgo.setDate(monthAgo.getDate() - 30);
-                    fromDate = formatDate(monthAgo);
-                    toDate = formatDate(today);
+                    fromTime = '00:00';
+                    toTime = '23:59';
                     break;
             }
 
             // Redirigir a la URL con los parámetros actualizados
-            window.location.href = `route_viewer.php?deviceId=${deviceId}&from=${fromDate}&to=${toDate}`;
+            window.location.href = `route_viewer.php?deviceId=${deviceId}&from_date=${fromDate}&to_date=${toDate}&from_time=${fromTime}&to_time=${toTime}`;
+        }
+
+        // Función para manejar la búsqueda de vehículos
+        function setupVehicleSearch() {
+            const searchInput = document.getElementById('vehicle-search');
+            const dropdown = document.getElementById('vehicle-dropdown');
+            const deviceIdInput = document.getElementById('deviceId');
+            const dropdownList = dropdown.querySelector('ul');
+
+            // Si hay un vehículo seleccionado, mostrar su nombre en el campo de búsqueda
+            if (deviceIdInput.value) {
+                const selectedDevice = devices.find(d => d.id == deviceIdInput.value);
+                if (selectedDevice) {
+                    searchInput.value = selectedDevice.name;
+                }
+            }
+
+            // Función para filtrar vehículos
+            function filterVehicles(query) {
+                if (!query) {
+                    return devices.slice(0, 10); // Mostrar los primeros 10 si no hay búsqueda
+                }
+
+                query = query.toLowerCase();
+                return devices.filter(device => {
+                    return device.name.toLowerCase().includes(query) ||
+                           (device.uniqueId && device.uniqueId.toLowerCase().includes(query));
+                }).slice(0, 20); // Limitar a 20 resultados
+            }
+
+            // Función para actualizar el dropdown
+            function updateDropdown(results) {
+                dropdownList.innerHTML = '';
+
+                if (results.length === 0) {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2 text-gray-500 italic';
+                    li.textContent = 'No se encontraron vehículos';
+                    dropdownList.appendChild(li);
+                    return;
+                }
+
+                results.forEach(device => {
+                    const li = document.createElement('li');
+                    li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                    li.textContent = device.name;
+                    li.dataset.id = device.id;
+
+                    li.addEventListener('click', () => {
+                        deviceIdInput.value = device.id;
+                        searchInput.value = device.name;
+                        dropdown.classList.add('hidden');
+                        handlePredefinedRangeButtons();
+                    });
+
+                    dropdownList.appendChild(li);
+                });
+            }
+
+            // Evento para mostrar/ocultar dropdown
+            searchInput.addEventListener('focus', () => {
+                const results = filterVehicles(searchInput.value);
+                updateDropdown(results);
+                dropdown.classList.remove('hidden');
+            });
+
+            // Evento para filtrar al escribir
+            searchInput.addEventListener('input', () => {
+                const results = filterVehicles(searchInput.value);
+                updateDropdown(results);
+                dropdown.classList.remove('hidden');
+            });
+
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // Evitar que el formulario se envíe al presionar Enter en el campo de búsqueda
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+
+                    // Si hay un solo resultado, seleccionarlo automáticamente
+                    const visibleItems = dropdownList.querySelectorAll('li[data-id]');
+                    if (visibleItems.length === 1) {
+                        visibleItems[0].click();
+                    }
+                }
+            });
         }
 
         // Ejecutar al cargar la página
         document.addEventListener('DOMContentLoaded', function() {
-            const deviceSelect = document.querySelector('select[name=deviceId]');
-
-            // Manejar cambios en la selección de dispositivo
-            deviceSelect.addEventListener('change', handlePredefinedRangeButtons);
+            // Configurar búsqueda de vehículos
+            setupVehicleSearch();
 
             // Ejecutar al inicio
             handlePredefinedRangeButtons();

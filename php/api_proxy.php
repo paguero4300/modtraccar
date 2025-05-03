@@ -148,8 +148,8 @@ class TraccarAPI {
             error_log("[ERROR] TraccarAPI::getDevices - No se pudieron obtener los dispositivos de Traccar.");
             //return $traccarDevices; // Devolver el error original o false
         }
-        
-       
+
+
        //file_put_contents($logFile, date("Y-m-d H:i:s") . " TraccarAPI::getDevices: " . json_encode($traccarDevices) . PHP_EOL, FILE_APPEND);
 
         // 2. Obtener datos de la API externa
@@ -180,7 +180,7 @@ class TraccarAPI {
             // Intentar coincidir por uniqueId (IMEI/Identificador) o name (Nombre del dispositivo)
             // Asumimos que uno de estos campos contiene la placa
             $possibleKeys = [];
-         
+
             if (isset($device['name'])) {
                 // Manejo de caracteres escapados en JSON - el / se debe tratar como /
                 $cleanName = str_replace('\/', '/', trim($device['name']));
@@ -194,20 +194,20 @@ class TraccarAPI {
                     // Verificar si attributes es un array
                     if (!isset($device['attributes']) || !is_array($device['attributes'])) {
                         $device['attributes'] = [];
-                       
+
                     }
-                    
+
                     // Añadir los campos extra al dispositivo de Traccar
                     $device['attributes']['padron'] = $externalDataMap[$key]['padron'] ?? null;
                     $device['attributes']['terminal'] = $externalDataMap[$key]['terminal'] ?? null;
                     $device['attributes']['ultimo_despacho'] = $externalDataMap[$key]['ultimo_despacho'] ?? null;
-                    
+
                     // Copiar los valores también a la raíz del objeto para compatibilidad con el frontend
                     $device['padron'] = $externalDataMap[$key]['padron'] ?? null;
                     $device['terminal'] = $externalDataMap[$key]['terminal'] ?? null;
                     $device['ultimo_despacho'] = $externalDataMap[$key]['ultimo_despacho'] ?? null;
-                
-                    
+
+
                     $matched = true;
                     break; // Salir del bucle de claves si se encuentra una coincidencia
                 }
@@ -218,7 +218,7 @@ class TraccarAPI {
                  $device['attributes']['padron'] = null;
                  $device['attributes']['terminal'] = null;
                  $device['attributes']['ultimo_despacho'] = null;
-                 
+
                  // Copiar los valores nulos también a la raíz del objeto
                  $device['padron'] = null;
                  $device['terminal'] = null;
@@ -230,17 +230,17 @@ class TraccarAPI {
 
         // Agregar marca para depuración en consola
         $result = $combinedDevices;
-        
+
         // Agregar información de depuración para que se pueda ver en la consola del navegador
         foreach ($result as &$device) {
             $device['_debug_info'] = 'Datos combinados para mostrar en console.log';
-            
+
             // Asegurar que los datos importantes sean visibles explícitamente
             if (!isset($device['padron'])) $device['padron'] = null;
             if (!isset($device['terminal'])) $device['terminal'] = null;
             if (!isset($device['ultimo_despacho'])) $device['ultimo_despacho'] = null;
         }
-        
+
         return $result;
     }
 
@@ -306,82 +306,100 @@ class TraccarAPI {
      * @param int $deviceId ID del dispositivo
      * @param string $from Fecha de inicio (ISO 8601)
      * @param string $to Fecha de fin (ISO 8601)
+     * @param bool $useCache Si se debe usar caché (por defecto true)
      * @return array|false Lista de posiciones o false si falla
      */
-    public function getRoute($deviceId, $from, $to) {
-        // Usar exclusivamente el endpoint de reportes
-        $url = "/reports/route?deviceId={$deviceId}&from={$from}&to={$to}";
+    public function getRoute($deviceId, $from, $to, $useCache = true) {
+        // Verificar si debemos usar caché
+        if ($useCache) {
+            // Incluir la clase de caché
+            require_once __DIR__ . '/route_cache.php';
+            $cache = new RouteCache();
 
-        error_log("[DEBUG] TraccarAPI::getRoute - Solicitando ruta para dispositivo ID: {$deviceId}");
-        error_log("[DEBUG] TraccarAPI::getRoute - Rango de fechas: {$from} a {$to}");
-        error_log("[DEBUG] TraccarAPI::getRoute - URL completa: {$this->apiUrl}{$url}");
+            // Verificar si hay datos en caché
+            if ($cache->hasValidCache($deviceId, $from, $to)) {
+                error_log("[INFO] TraccarAPI::getRoute - Usando datos de caché para dispositivo {$deviceId}");
+                return $cache->getFromCache($deviceId, $from, $to);
+            }
+        }
 
         // Verificar si las fechas son válidas
         $fromDate = new DateTime($from);
         $toDate = new DateTime($to);
         $now = new DateTime();
 
-        error_log("[DEBUG] TraccarAPI::getRoute - Fecha actual: " . $now->format('Y-m-d\TH:i:s\Z'));
-        error_log("[DEBUG] TraccarAPI::getRoute - Fecha 'from' parseada: " . $fromDate->format('Y-m-d\TH:i:s\Z'));
-        error_log("[DEBUG] TraccarAPI::getRoute - Fecha 'to' parseada: " . $toDate->format('Y-m-d\TH:i:s\Z'));
-
-        // Verificar si las fechas están en el futuro
-        if ($fromDate > $now) {
-            error_log("[DEBUG] TraccarAPI::getRoute - ADVERTENCIA: La fecha 'from' está en el futuro");
-        }
-        if ($toDate > $now) {
-            error_log("[DEBUG] TraccarAPI::getRoute - ADVERTENCIA: La fecha 'to' está en el futuro");
-        }
-
-        // Probar con fechas alternativas si estamos en modo de depuración
-        // Esto es solo para verificar si hay datos disponibles en el sistema
-        $testPastDate = true; // Cambiar a false para desactivar esta prueba
-
-        if ($testPastDate && ($fromDate > $now || $toDate > $now)) {
-            // Crear fechas de prueba en el pasado (7 días atrás hasta hoy)
-            $testFromDate = clone $now;
-            $testFromDate->modify('-7 days');
-            $testToDate = clone $now;
-
-            $testFromStr = $testFromDate->format('Y-m-d\TH:i:s\Z');
-            $testToStr = $testToDate->format('Y-m-d\TH:i:s\Z');
-
-            error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: Intentando con fechas alternativas en el pasado");
-            error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: Rango de fechas alternativo: {$testFromStr} a {$testToStr}");
-
-            // Construir URL de prueba
-            $testUrl = "/reports/route?deviceId={$deviceId}&from={$testFromStr}&to={$testToStr}";
-            error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: URL alternativa: {$this->apiUrl}{$testUrl}");
-
-            // Realizar solicitud de prueba
-            try {
-                $testResult = $this->request('GET', $testUrl);
-                if (is_array($testResult)) {
-                    error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: Resultado con fechas alternativas: " . count($testResult) . " puntos");
-                } else {
-                    error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: No se obtuvieron datos con fechas alternativas");
-                }
-            } catch (Exception $e) {
-                error_log("[DEBUG] TraccarAPI::getRoute - PRUEBA: Error al probar con fechas alternativas: " . $e->getMessage());
-            }
-        }
-
         // Verificar el intervalo de tiempo
         $interval = $fromDate->diff($toDate);
+        $intervalDays = $interval->days;
         $intervalStr = $interval->format('%d días, %h horas, %i minutos');
-        error_log("[DEBUG] TraccarAPI::getRoute - Intervalo de tiempo: {$intervalStr}");
+        error_log("[INFO] TraccarAPI::getRoute - Intervalo de tiempo: {$intervalStr}");
 
-        // Verificar si el dispositivo existe
-        try {
-            $deviceResponse = $this->request('GET', "/devices/{$deviceId}");
-            if ($deviceResponse) {
-                error_log("[DEBUG] TraccarAPI::getRoute - Dispositivo encontrado: " . json_encode($deviceResponse));
-            } else {
-                error_log("[DEBUG] TraccarAPI::getRoute - ADVERTENCIA: No se pudo verificar si el dispositivo existe");
+        // Si el intervalo es muy grande (más de 7 días), dividir en segmentos
+        if ($intervalDays > 7) {
+            error_log("[INFO] TraccarAPI::getRoute - Intervalo grande detectado, dividiendo en segmentos");
+
+            // Dividir en segmentos de 3 días
+            $segmentSize = 3;
+            $allPoints = [];
+            $currentDate = clone $fromDate;
+
+            while ($currentDate < $toDate) {
+                // Calcular fecha de fin para este segmento
+                $segmentEndDate = clone $currentDate;
+                $segmentEndDate->modify("+{$segmentSize} days");
+
+                // Si la fecha de fin supera la fecha final, ajustar
+                if ($segmentEndDate > $toDate) {
+                    $segmentEndDate = clone $toDate;
+                }
+
+                // Obtener posiciones para este segmento
+                $segmentFrom = $currentDate->format('Y-m-d\TH:i:s\Z');
+                $segmentTo = $segmentEndDate->format('Y-m-d\TH:i:s\Z');
+
+                error_log("[INFO] TraccarAPI::getRoute - Obteniendo segmento: {$segmentFrom} a {$segmentTo}");
+
+                // Obtener ruta para este segmento
+                $segmentResult = $this->getRouteSegment($deviceId, $segmentFrom, $segmentTo);
+
+                if (is_array($segmentResult)) {
+                    $allPoints = array_merge($allPoints, $segmentResult);
+                    error_log("[INFO] TraccarAPI::getRoute - Segmento obtenido con " . count($segmentResult) . " puntos");
+                }
+
+                // Avanzar al siguiente segmento
+                $currentDate = $segmentEndDate;
             }
-        } catch (Exception $e) {
-            error_log("[DEBUG] TraccarAPI::getRoute - Error al verificar dispositivo: " . $e->getMessage());
+
+            $result = $allPoints;
+        } else {
+            // Para rangos pequeños, obtener directamente
+            $result = $this->getRouteSegment($deviceId, $from, $to);
         }
+
+        // Si se obtuvieron datos y estamos usando caché, guardarlos
+        if ($useCache && is_array($result) && count($result) > 0) {
+            $cache->saveToCache($deviceId, $from, $to, $result);
+            error_log("[INFO] TraccarAPI::getRoute - Guardados " . count($result) . " puntos en caché");
+        }
+
+        return $result;
+    }
+
+    /**
+     * Método interno para obtener un segmento de ruta
+     *
+     * @param int $deviceId ID del dispositivo
+     * @param string $from Fecha de inicio (ISO 8601)
+     * @param string $to Fecha de fin (ISO 8601)
+     * @return array|false Lista de posiciones o false si falla
+     */
+    private function getRouteSegment($deviceId, $from, $to) {
+        // Usar exclusivamente el endpoint de reportes
+        $url = "/reports/route?deviceId={$deviceId}&from={$from}&to={$to}";
+
+        error_log("[INFO] TraccarAPI::getRouteSegment - Solicitando ruta para dispositivo ID: {$deviceId}");
+        error_log("[INFO] TraccarAPI::getRouteSegment - Rango de fechas: {$from} a {$to}");
 
         // Crear opciones específicas para asegurar que se reciba JSON
         $options = [
@@ -400,17 +418,10 @@ class TraccarAPI {
             ]
         ];
 
-        // Imprimir la URL completa para depuración y prueba manual
-        $fullUrl = $this->apiUrl . $url;
-        error_log("[DEBUG] TraccarAPI::getRoute - URL completa para prueba manual: {$fullUrl}");
-        error_log("[DEBUG] TraccarAPI::getRoute - Comando curl equivalente: curl -H 'Accept: application/json' -H 'Cookie: JSESSIONID={$this->sessionCookie}' '{$fullUrl}'");
-
         // Añadir cookie de sesión si existe
         if ($this->sessionCookie) {
             $options['http']['header'][] = 'Cookie: JSESSIONID=' . $this->sessionCookie;
         }
-
-        error_log("[DEBUG] TraccarAPI::getRoute - Usando cabeceras específicas para forzar JSON: " . json_encode($options['http']['header']));
 
         $startTime = microtime(true);
 
@@ -418,16 +429,13 @@ class TraccarAPI {
         $fullUrl = $this->apiUrl . $url;
         $context = stream_context_create($options);
 
-        error_log("[DEBUG] TraccarAPI::getRoute - Realizando solicitud GET a {$fullUrl}");
-
         // Intentar con file_get_contents primero
-        error_log("[DEBUG] TraccarAPI::getRoute - Intentando obtener ruta con file_get_contents");
         $rawResult = @file_get_contents($fullUrl, false, $context);
         $endTime = microtime(true);
         $duration = round(($endTime - $startTime) * 1000, 2); // en milisegundos
 
         if ($rawResult === false) {
-            error_log("[DEBUG] TraccarAPI::getRoute - Error al obtener ruta con file_get_contents. Intentando con curl");
+            error_log("[INFO] TraccarAPI::getRouteSegment - Error al obtener ruta con file_get_contents. Intentando con curl");
 
             // Intentar con curl como alternativa
             $ch = curl_init($fullUrl);
@@ -441,60 +449,35 @@ class TraccarAPI {
                 CURLOPT_TIMEOUT => 30
             ]);
 
-            error_log("[DEBUG] TraccarAPI::getRoute - Ejecutando curl con cabeceras: Accept: application/json, Cookie: JSESSIONID={$this->sessionCookie}");
             $curlResult = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
             $error = curl_error($ch);
             curl_close($ch);
 
-            error_log("[DEBUG] TraccarAPI::getRoute - Respuesta curl: HTTP {$httpCode}, Content-Type: {$contentType}");
-
             if ($curlResult === false) {
-                error_log("[DEBUG] TraccarAPI::getRoute - Error curl: {$error}");
+                error_log("[INFO] TraccarAPI::getRouteSegment - Error curl: {$error}");
                 // Si falla curl, intentar con el método request normal
                 $result = $this->request('GET', $url);
             } else {
-                error_log("[DEBUG] TraccarAPI::getRoute - Respuesta curl recibida. Longitud: " . strlen($curlResult) . " bytes");
-
                 // Verificar si es JSON válido
                 $result = json_decode($curlResult, true);
                 if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
-                    error_log("[DEBUG] TraccarAPI::getRoute - Error al decodificar JSON de curl: " . json_last_error_msg());
-                    error_log("[DEBUG] TraccarAPI::getRoute - Primeros 500 bytes de la respuesta curl: " . substr($curlResult, 0, 500));
-
                     // Si no es JSON válido pero es Excel, intentar convertirlo
                     if (strpos($contentType, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') !== false) {
-                        error_log("[DEBUG] TraccarAPI::getRoute - La respuesta es un archivo Excel. Intentando procesar manualmente");
-
-                        // Guardar el Excel temporalmente
-                        $tempFile = tempnam(sys_get_temp_dir(), 'route_excel_');
-                        file_put_contents($tempFile, $curlResult);
-                        error_log("[DEBUG] TraccarAPI::getRoute - Excel guardado temporalmente en: {$tempFile}");
-
-                        // Aquí podríamos implementar un parser de Excel si fuera necesario
-                        // Por ahora, devolvemos un array vacío
+                        error_log("[INFO] TraccarAPI::getRouteSegment - La respuesta es un archivo Excel. No se puede procesar.");
                         $result = [];
                     } else {
                         // Si no es JSON ni Excel, intentar con el método request normal
                         $result = $this->request('GET', $url);
                     }
-                } else {
-                    error_log("[DEBUG] TraccarAPI::getRoute - JSON de curl decodificado correctamente");
                 }
             }
         } else {
-            error_log("[DEBUG] TraccarAPI::getRoute - Respuesta file_get_contents recibida. Longitud: " . strlen($rawResult) . " bytes");
-
             // Verificar si es JSON válido
             $result = json_decode($rawResult, true);
             if ($result === null && json_last_error() !== JSON_ERROR_NONE) {
-                error_log("[DEBUG] TraccarAPI::getRoute - Error al decodificar JSON de file_get_contents: " . json_last_error_msg());
-                error_log("[DEBUG] TraccarAPI::getRoute - Primeros 500 bytes de la respuesta file_get_contents: " . substr($rawResult, 0, 500));
-
                 // Intentar con curl como alternativa
-                error_log("[DEBUG] TraccarAPI::getRoute - Intentando con curl como alternativa");
-
                 $ch = curl_init($fullUrl);
                 curl_setopt_array($ch, [
                     CURLOPT_RETURNTRANSFER => true,
@@ -507,18 +490,11 @@ class TraccarAPI {
                 ]);
 
                 $curlResult = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
                 curl_close($ch);
-
-                error_log("[DEBUG] TraccarAPI::getRoute - Respuesta curl alternativa: HTTP {$httpCode}, Content-Type: {$contentType}");
 
                 if ($curlResult !== false) {
                     $result = json_decode($curlResult, true);
-                    if ($result !== null || json_last_error() === JSON_ERROR_NONE) {
-                        error_log("[DEBUG] TraccarAPI::getRoute - JSON de curl alternativo decodificado correctamente");
-                    } else {
-                        error_log("[DEBUG] TraccarAPI::getRoute - Error al decodificar JSON de curl alternativo");
+                    if ($result === null || json_last_error() !== JSON_ERROR_NONE) {
                         // Si todo falla, intentar con el método request normal
                         $result = $this->request('GET', $url);
                     }
@@ -526,36 +502,16 @@ class TraccarAPI {
                     // Si todo falla, intentar con el método request normal
                     $result = $this->request('GET', $url);
                 }
-            } else {
-                error_log("[DEBUG] TraccarAPI::getRoute - JSON de file_get_contents decodificado correctamente");
             }
         }
 
         if ($result === false) {
-            error_log("[DEBUG] TraccarAPI::getRoute - Error al obtener ruta. La solicitud falló.");
-            return false;
+            error_log("[INFO] TraccarAPI::getRouteSegment - Error al obtener ruta. La solicitud falló.");
+            return [];
         }
 
         $count = is_array($result) ? count($result) : 0;
-        error_log("[DEBUG] TraccarAPI::getRoute - Respuesta recibida en {$duration}ms con {$count} puntos");
-
-        if ($count > 0 && is_array($result)) {
-            // Verificar si los puntos pertenecen al dispositivo solicitado
-            $deviceIds = array_unique(array_column($result, 'deviceId'));
-            $deviceIdsStr = implode(', ', $deviceIds);
-            error_log("[DEBUG] TraccarAPI::getRoute - IDs de dispositivos en la respuesta: {$deviceIdsStr}");
-
-            // Verificar el primer y último punto
-            $firstPoint = reset($result);
-            $lastPoint = end($result);
-
-            if ($firstPoint && $lastPoint) {
-                error_log("[DEBUG] TraccarAPI::getRoute - Primer punto: ID={$firstPoint['id']}, deviceId={$firstPoint['deviceId']}, tiempo={$firstPoint['deviceTime']}");
-                error_log("[DEBUG] TraccarAPI::getRoute - Último punto: ID={$lastPoint['id']}, deviceId={$lastPoint['deviceId']}, tiempo={$lastPoint['deviceTime']}");
-            }
-        } else {
-            error_log("[DEBUG] TraccarAPI::getRoute - No se encontraron puntos para el dispositivo {$deviceId} en el rango especificado");
-        }
+        error_log("[INFO] TraccarAPI::getRouteSegment - Respuesta recibida en {$duration}ms con {$count} puntos");
 
         return $result;
     }
