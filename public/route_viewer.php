@@ -1278,7 +1278,7 @@ $devicesJson = json_encode($devices);
             });
 
             // Mostrar puntos GPS por defecto
-            showPointsCheckbox.checked = true;
+            showPointsCheckbox.checked = false;
             createRoutePointMarkers();
             toggleRoutePoints();
 
