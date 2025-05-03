@@ -97,8 +97,8 @@ $user = $_SESSION['user'];
             --color-secondary: #8b5cf6;
             --color-accent-1: #10b981;
             --color-accent-2: #ef4444;
-            --color-terminal-a: #36D399;
-            --color-terminal-b: #FF7AC6;
+            --color-terminal-a: #3b82f6;
+            --color-terminal-b: #ef4444;
 
             /* Espaciado basado en proporción áurea */
             --spacing-xs: calc(var(--base-unit) * 0.618);
@@ -187,13 +187,13 @@ $user = $_SESSION['user'];
         }
 
         .vehicle-marker.terminal-a .vehicle-icon {
-            background-color: #36D399;
+            background-color: #3b82f6;
             clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
             border: 1px solid rgba(0, 0, 0, 0.2);
         }
 
         .vehicle-marker.terminal-b .vehicle-icon {
-            background-color: #FF7AC6;
+            background-color: #ef4444;
             clip-path: polygon(50% 100%, 0% 0%, 100% 0%);
             border: 1px solid rgba(0, 0, 0, 0.2);
         }
@@ -211,11 +211,11 @@ $user = $_SESSION['user'];
         }
 
         .vehicle-marker.terminal-a .vehicle-padron {
-            background-color: rgba(54, 211, 153, 0.9);
+            background-color: rgba(59, 130, 246, 0.9);
         }
 
         .vehicle-marker.terminal-b .vehicle-padron {
-            background-color: rgba(255, 122, 198, 0.9);
+            background-color: rgba(239, 68, 68, 0.9);
         }
 
         /* Principio de cierre de Gestalt - información completa en tooltips */
@@ -478,11 +478,11 @@ $user = $_SESSION['user'];
         }
 
         .legend-terminal-a .legend-padron {
-            background-color: rgba(54, 211, 153, 0.9);
+            background-color: rgba(59, 130, 246, 0.9);
         }
 
         .legend-terminal-b .legend-padron {
-            background-color: rgba(255, 122, 198, 0.9);
+            background-color: rgba(239, 68, 68, 0.9);
         }
 
         .section-title {
