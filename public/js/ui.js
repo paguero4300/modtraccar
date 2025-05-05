@@ -150,13 +150,33 @@ function setupVehicleSearch() {
 
 // Actualizar contador de vehículos
 window.updateVehicleCount = function(count) {
-    document.getElementById('vehicles-count').textContent = count;
+    const vehiclesCount = document.getElementById('vehicles-count');
+    const currentCount = parseInt(vehiclesCount.textContent);
+
+    // Usar la función de animación para actualizar el contador
+    animateCounter(vehiclesCount, currentCount, count);
+
+    // Ocultar el label cuando se muestra el total
+    const vehiclesCountLabel = document.getElementById('vehicles-count-label');
+    if (vehiclesCountLabel) {
+        vehiclesCountLabel.classList.add('hidden');
+    }
 }
 
 // Actualizar lista de vehículos
 window.updateVehiclesList = function() {
     const vehiclesList = document.getElementById('vehicles-list');
     const devices = Object.values(deviceData);
+    const totalDevices = devices.length;
+
+    // Contar dispositivos por estado
+    const onlineDevices = devices.filter(device => device.status === 'online').length;
+    const offlineDevices = devices.filter(device => device.status === 'offline').length;
+
+    // Actualizar contadores en los botones de filtro
+    updateFilterCount('count-all', totalDevices);
+    updateFilterCount('count-online', onlineDevices);
+    updateFilterCount('count-offline', offlineDevices);
 
     // Filtrar dispositivos
     let filteredDevices = devices;
@@ -176,6 +196,24 @@ window.updateVehiclesList = function() {
 
     // Ordenar por nombre
     filteredDevices.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Actualizar contador con el número de vehículos filtrados
+    const vehiclesCount = document.getElementById('vehicles-count');
+    const filteredCount = filteredDevices.length;
+
+    // Actualizar el contador con animación
+    animateCounter(vehiclesCount, parseInt(vehiclesCount.textContent || '0'), filteredCount);
+
+    // Actualizar texto adicional del contador
+    const vehiclesCountLabel = document.getElementById('vehicles-count-label');
+    if (vehiclesCountLabel) {
+        if (currentFilter !== 'all' || searchTerm) {
+            vehiclesCountLabel.textContent = `de ${totalDevices}`;
+            vehiclesCountLabel.classList.remove('hidden');
+        } else {
+            vehiclesCountLabel.classList.add('hidden');
+        }
+    }
 
     // Generar HTML
     let html = '';
@@ -282,6 +320,73 @@ window.updateVehiclesList = function() {
             }
         });
     });
+}
+
+// Función para actualizar el contador en los botones de filtro
+function updateFilterCount(id, count) {
+    const countElement = document.getElementById(id);
+    if (!countElement) return;
+
+    // Actualizar el valor
+    const currentCount = parseInt(countElement.textContent || '0');
+
+    // Animar el contador
+    if (currentCount !== count) {
+        // Actualizar con animación
+        animateCounter(countElement, currentCount, count);
+
+        // Mostrar el contador si hay vehículos
+        if (count > 0) {
+            countElement.classList.add('show');
+        } else {
+            countElement.classList.remove('show');
+        }
+    }
+}
+
+// Función para animar el contador
+function animateCounter(element, startValue, endValue) {
+    // Si no hay cambio, no animar
+    if (startValue === endValue) return;
+
+    // Duración de la animación en milisegundos
+    const duration = 500;
+    const start = performance.now();
+
+    // Función para animar el contador
+    function updateCounter(timestamp) {
+        const elapsed = timestamp - start;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Usar una función de easing para suavizar la animación
+        // Esta es una función de easing cuadrática
+        const easeOutQuad = progress * (2 - progress);
+
+        // Calcular el valor actual
+        const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuad);
+
+        // Actualizar el elemento
+        element.textContent = currentValue;
+
+        // Continuar la animación si no ha terminado
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+        } else {
+            // Asegurar que el valor final sea exacto
+            element.textContent = endValue;
+
+            // Añadir clase para destacar el cambio
+            element.classList.add('highlight-change');
+
+            // Quitar la clase después de la animación
+            setTimeout(() => {
+                element.classList.remove('highlight-change');
+            }, 300);
+        }
+    }
+
+    // Iniciar la animación
+    requestAnimationFrame(updateCounter);
 }
 
 // Mostrar notificación toast

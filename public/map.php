@@ -83,6 +83,36 @@ $user = $_SESSION['user'];
             border: none !important;
         }
 
+        /* Estilos para el contador de vehículos con proporción áurea */
+        .counter-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        #vehicles-count {
+            /* Aplicando proporción áurea (1:1.618) */
+            width: 2.618rem;
+            height: 1.618rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #vehicles-count.highlight-change {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(87, 13, 248, 0.5);
+        }
+
+        #vehicles-count-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
         .marker-container {
             position: relative;
             width: 80px;
@@ -295,32 +325,65 @@ $user = $_SESSION['user'];
             transform: scale(1.05);
         }
 
-        /* Estilo para el botón activo */
+        /* Estilo para el botón activo - Mejorado con UI/UX */
         .filter-active {
             background-color: #570df8; /* Color primario */
-            border: 2px solid white;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 10px rgba(87, 13, 248, 0.4);
+            transform: scale(1.05);
         }
 
         /* Estilos para los iconos */
         .filter-btn svg {
             width: 24px;
             height: 24px;
-            fill: #333;
+            stroke: #333;
+            transition: all 0.3s ease;
         }
 
         /* Icono en botón activo */
         .filter-active svg {
-            fill: white;
+            stroke: white;
+        }
+
+        /* Contador de vehículos filtrados */
+        .filter-btn .filter-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #f87171;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn .filter-count.show {
+            opacity: 1;
+            transform: scale(1);
         }
 
         /* Estilos para modo oscuro */
         [data-theme="dark"] .filter-btn {
             background-color: #2a2a2a;
+            --btn-bg: #2a2a2a;
         }
 
         [data-theme="dark"] .filter-btn svg {
-            fill: #e0e0e0;
+            stroke: #e0e0e0;
+        }
+
+        [data-theme="dark"] .filter-active {
+            background-color: #661AE6;
+            box-shadow: 0 0 10px rgba(102, 26, 230, 0.4);
         }
 
         /* Estilos para el control de capas de Leaflet */
@@ -496,24 +559,71 @@ $user = $_SESSION['user'];
             fill-opacity: 0.6 !important;
         }
 
-        /* Tooltip para los botones de filtro */
+        /* Tooltip para los botones de filtro - Mejorado con UI/UX */
         .filter-btn {
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: var(--btn-bg, #f0f0f0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-btn::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 2000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+        }
+
+        .filter-btn::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg) scale(0);
+            width: 10px;
+            height: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 1999;
+            pointer-events: none;
+        }
+
+        .filter-btn:hover::before {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) scale(1);
+            top: -45px;
         }
 
         .filter-btn:hover::after {
-            content: attr(title);
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 1000;
+            opacity: 1;
+            transform: translateX(-50%) rotate(45deg) scale(1);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         /* Estilos para el panel de detalles del vehículo */
@@ -594,7 +704,12 @@ $user = $_SESSION['user'];
                 <div class="p-4">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold">Vehículos</h2>
-                        <div class="badge badge-primary" id="vehicles-count">0</div>
+                        <div class="flex items-center gap-1">
+                            <div class="counter-container">
+                                <div class="badge badge-primary text-lg px-3 py-3 transition-all duration-300" id="vehicles-count">0</div>
+                                <span id="vehicles-count-label" class="text-xs text-opacity-70 ml-1 hidden"></span>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-control mb-4">
@@ -608,23 +723,25 @@ $user = $_SESSION['user'];
                         </div>
                     </div>
 
-                    <div class="flex justify-center gap-2 mb-4">
-                        <!-- Botones de filtro completamente personalizados -->
-                        <button class="filter-btn filter-active" data-filter="all" title="Todos los vehículos">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path d="M8.25 10.875a2.625 2.625 0 115.25 0 2.625 2.625 0 01-5.25 0z" />
-                                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.125 4.5a4.125 4.125 0 102.338 7.524l2.007 2.006a.75.75 0 101.06-1.06l-2.006-2.007a4.125 4.125 0 00-3.399-6.463z" clip-rule="evenodd" />
+                    <div class="flex justify-center gap-3 mb-4">
+                        <!-- Botones de filtro con Heroicons -->
+                        <button class="filter-btn filter-active" data-filter="all" aria-label="Todos los vehículos" data-tooltip="Todos los vehículos">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                             </svg>
+                            <span class="filter-count" id="count-all">0</span>
                         </button>
-                        <button class="filter-btn" data-filter="online" title="Vehículos en línea">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                        <button class="filter-btn" data-filter="online" aria-label="Vehículos en línea" data-tooltip="Vehículos en línea">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
+                            <span class="filter-count" id="count-online">0</span>
                         </button>
-                        <button class="filter-btn" data-filter="offline" title="Vehículos desconectados">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.72 6.97a.75.75 0 10-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 101.06 1.06L12 13.06l1.72 1.72a.75.75 0 101.06-1.06L13.06 12l1.72-1.72a.75.75 0 10-1.06-1.06L12 10.94l-1.72-1.72z" clip-rule="evenodd" />
+                        <button class="filter-btn" data-filter="offline" aria-label="Vehículos desconectados" data-tooltip="Vehículos desconectados">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
+                            <span class="filter-count" id="count-offline">0</span>
                         </button>
                     </div>
 
