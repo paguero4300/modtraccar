@@ -104,7 +104,6 @@ function initPolling() {
     }
     
     console.log('Iniciando polling como fallback');
-    showToast('Usando actualización periódica como fallback', 'info');
     
     // Configurar intervalo de polling
     window.pollingInterval = setInterval(() => {

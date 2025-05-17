@@ -5,9 +5,8 @@
 // Variables globales
 let map;
 let markers = {};
-let markerCluster;
 let deviceData = {};
-let selectedDeviceId = null;
+let windowSelectedDeviceId = null;
 let routeLayer = null;
 
 // Inicializar el mapa
@@ -20,16 +19,6 @@ function initMap() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19
     }).addTo(map);
-    
-    // Inicializar grupo de marcadores para clustering
-    markerCluster = L.markerClusterGroup({
-        disableClusteringAtZoom: 15,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: false,
-        maxClusterRadius: 40
-    });
-    
-    map.addLayer(markerCluster);
     
     // Cargar dispositivos iniciales
     loadDevices();
@@ -136,13 +125,13 @@ function createMarker(device, position) {
     
     // Añadir evento de clic
     marker.on('click', () => {
-        selectedDeviceId = device.id;
+        windowSelectedDeviceId = device.id;
         showVehicleDetails(device, position);
     });
     
-    // Guardar marcador y añadir al cluster
+    // Guardar marcador
     markers[device.id] = marker;
-    markerCluster.addLayer(marker);
+    marker.addTo(map);
     
     return marker;
 }
@@ -179,7 +168,7 @@ function updateMarkerPopup(marker, device, position) {
     // Añadir evento al botón después de abrir el popup
     marker.on('popupopen', () => {
         document.querySelector(`.show-details[data-device-id="${device.id}"]`).addEventListener('click', () => {
-            selectedDeviceId = device.id;
+            windowSelectedDeviceId = device.id;
             showVehicleDetails(device, position);
         });
     });

@@ -110,20 +110,16 @@ function initPolling() {
     if (window.pollingInterval) {
         return;
     }
-
+    
     console.log('Iniciando polling como fallback');
-    showToast('Usando actualización periódica como fallback', 'info');
-
-    // Cargar posiciones inmediatamente
-    loadDevices();
-
+    
     // Configurar intervalo de polling
     window.pollingInterval = setInterval(() => {
         // Solo hacer polling si WebSocket no está conectado
         if (!isConnected) {
             loadPositions();
         }
-    }, config.refreshInterval || 10000); // Usar 10 segundos como valor predeterminado si no está configurado
+    }, config.refreshInterval);
 }
 
 // Cargar dispositivos mediante API
