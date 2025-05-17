@@ -39,11 +39,6 @@ $user = $_SESSION['user'];
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Leaflet MarkerCluster -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
     <!-- Toastify para notificaciones -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -177,7 +172,7 @@ $user = $_SESSION['user'];
         }
 
         .vehicle-marker-icon.terminal-a.stopped {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%233b82f6" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%233b82f6" stroke="%23000000" stroke-width="0.2"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6"/></svg>');
         }
 
         .vehicle-marker-icon.terminal-b.moving {
@@ -529,115 +524,88 @@ $user = $_SESSION['user'];
         .geofence-circle {
             transition: all 0.3s ease;
         }
-
-        .geofence-polygon {
-            transition: all 0.3s ease;
+        
+        .geofence-circle:hover {
+            fillOpacity: 0.4 !important;
+            weight: 4 !important;
         }
-
-        .geofence-rectangle {
-            transition: all 0.3s ease;
-        }
-
-        .geofence-polyline {
-            transition: all 0.3s ease;
-        }
-
-        /* Tooltip para geocercas */
+        
         .geofence-tooltip {
-            background-color: rgba(0, 0, 0, 0.8);
-            border: none;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
             border-radius: 4px;
-            color: white;
-            font-weight: bold;
-            padding: 5px 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Efectos de hover para geocercas */
-        .leaflet-interactive:hover {
-            stroke-width: 4px !important;
-            fill-opacity: 0.6 !important;
-        }
-
-        /* Tooltip para los botones de filtro - Mejorado con UI/UX */
-        .filter-btn {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background-color: var(--btn-bg, #f0f0f0);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-btn::before {
-            content: attr(data-tooltip);
-            position: absolute;
-            top: -40px;
-            left: 50%;
-            transform: translateX(-50%) scale(0.8);
-            background-color: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 4px 8px;
             font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.2s ease;
-            z-index: 2000;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            pointer-events: none;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-
-        .filter-btn::after {
-            content: '';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%) rotate(45deg) scale(0);
-            width: 10px;
-            height: 10px;
-            background-color: rgba(0, 0, 0, 0.8);
-            opacity: 0;
-            transition: all 0.2s ease;
-            z-index: 1999;
-            pointer-events: none;
+        
+        /* Estilos para el modo oscuro */
+        [data-theme="dark"] .geofence-tooltip {
+            background-color: rgba(42, 42, 42, 0.9);
+            color: #e0e0e0;
+            border-color: #666;
         }
-
-        .filter-btn:hover::before {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) scale(1);
-            top: -45px;
-        }
-
-        .filter-btn:hover::after {
-            opacity: 1;
-            transform: translateX(-50%) rotate(45deg) scale(1);
-        }
-
-        .filter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Estilos para el panel de detalles del vehículo */
-        #vehicle-details-panel {
-            transition: transform 0.3s ease-in-out;
+        
+        /* Estilos para el listado permanente de geocercas */
+        #permanent-geofences-list {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
             z-index: 1000;
-            transform: translateY(0);
-            display: block;
+            max-width: 280px;
+            overflow-y: auto;
         }
-
-        #vehicle-details-panel.hidden {
-            transform: translateY(100%);
-            display: block !important;
-            visibility: hidden;
+        
+        /* Estilos para el panel minimizado */
+        #permanent-geofences-list.geofences-minimized {
+            max-height: 30px;
+            overflow: hidden;
+        }
+        
+        #permanent-geofences-list .geofences-content {
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+        
+        #permanent-geofences-list.geofences-minimized .geofences-content {
+            opacity: 0;
+        }
+        
+        #permanent-geofences-list .permanent-geofence-item {
+            transition: all 0.2s ease;
+        }
+        
+        #permanent-geofences-list .permanent-geofence-item:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+            transform: translateX(3px);
+        }
+        
+        #permanent-geofences-list .permanent-geofence-item.active {
+            background-color: rgba(33, 150, 243, 0.2);
+            border-left: 3px solid #2196F3;
+        }
+        
+        /* Estilos para los iconos de expandir/colapsar */
+        #toggle-geofences-btn {
+            transition: all 0.2s ease;
+        }
+        
+        #toggle-geofences-btn:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+        
+        /* Estilos para modo oscuro */
+        [data-theme="dark"] #permanent-geofences-list {
+            background-color: rgba(42, 42, 42, 0.95);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-theme="dark"] #permanent-geofences-list .permanent-geofence-item:hover {
+            background-color: rgba(33, 150, 243, 0.2);
+        }
+        
+        [data-theme="dark"] #toggle-geofences-btn:hover {
+            background-color: rgba(33, 150, 243, 0.2);
         }
     </style>
 </head>
@@ -758,34 +726,222 @@ $user = $_SESSION['user'];
                 <div id="map" class="h-full w-full"></div>
 
                 <!-- Botón para cargar geocercas -->
-                <button id="load-geofences-btn" class="btn btn-circle btn-sm bg-white shadow-md hover:bg-gray-100 text-gray-700 absolute top-4 right-4 z-10" title="Cargar geocercas">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <button id="load-geofences-btn" class="btn btn-sm btn-primary gap-1" title="Cargar geocercas">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                     </svg>
+                    Geocercas
                 </button>
+
+                <!-- Botón para recargar geocercas -->
+                <button id="reload-geofences-btn" class="btn btn-sm btn-ghost gap-1" title="Recargar geocercas">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                </button>
+
+                <!-- Listado permanente de geocercas (minimizable) -->
+                <div id="permanent-geofences-list" class="absolute top-12 left-4 bg-base-100 shadow-lg rounded-lg p-1 w-40 max-h-[70vh] geofences-minimized">
+                    <div class="flex justify-between items-center mb-1 px-1">
+                        <div class="text-xs font-semibold">Paraderos</div>
+                        <button id="toggle-geofences-btn" class="btn btn-xs btn-ghost p-0 min-h-0 h-5 w-5" title="Expandir/Minimizar lista">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 expand-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
+                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 collapse-icon hidden">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L9 17.25m0 0L3 12m6 5.25h5.25M16.5 4.5v12m0 0L21 12m-4.5 4.5h5.25" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="divider my-0.5"></div>
+                    <div class="space-y-0.5 geofences-content">
+                        <!-- Ruta AB -->
+                        <div class="text-xs font-medium text-primary px-1">AB</div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="01_AB_Proceres" data-lat="-12.151569" data-lon="-76.988855">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>01_AB_Proceres</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="02_AB_Espinar" data-lat="-12.114344" data-lon="-77.036921">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>02_AB_Espinar</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="03_AB_EjercitoBrasil" data-lat="-12.097006" data-lon="-77.071756">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>03_AB_EjercitoBrasil</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="04_AB_Bolognesi" data-lat="-12.060921" data-lon="-77.042050">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>04_AB_Bolognesi</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="05_AB_OvaloLaPaz" data-lat="-12.040389" data-lon="-76.998019">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>05_AB_OvaloLaPaz</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="06_AB_Ceres" data-lat="-12.030840" data-lon="-76.929611">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>06_AB_Ceres</span>
+                            </div>
+                        </div>
+                        <!-- Ruta BA -->
+                        <div class="text-xs font-medium text-primary px-1 mt-1">BA</div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="01_BA_Chucocaminoreal" data-lat="-12.041180" data-lon="-76.976033">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>01_BA_Chucocaminoreal</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="02_BA_Estaciongrau" data-lat="-12.054154" data-lon="-77.012864">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>02_BA_Estaciongrau</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="03_BA_EjercitoBrasil" data-lat="-12.097006" data-lon="-77.071756">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>03_BA_EjercitoBrasil</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="04_BA_Angamosaviacion" data-lat="-12.111845" data-lon="-77.000777">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>04_BA_Angamosaviacion</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="05_BA_Jorgechavez" data-lat="-12.142627" data-lon="-76.991186">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>05_BA_Jorgechavez</span>
+                            </div>
+                        </div>
+                        <div class="permanent-geofence-item cursor-pointer hover:bg-base-200 rounded px-1 py-0.5 text-xs" data-name="06_BA_Paradero" data-lat="-12.182013" data-lon="-77.000407">
+                            <div class="flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span>06_BA_Paradero</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Panel original de lista de geocercas (mantener para compatibilidad) -->
+                <div id="geofences-list" class="absolute top-12 right-4 bg-base-100 shadow-lg rounded-lg p-2 w-64 max-h-96 overflow-y-auto hidden">
+                    <div class="text-sm font-semibold mb-2 px-2">Lista de Geocercas</div>
+                    <div class="divider my-1"></div>
+                    <div class="space-y-1">
+                        <!-- Ruta AB -->
+                        <div class="text-xs font-medium text-primary px-2">Ruta AB</div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="01_AB_Proceres" data-lat="-12.151569" data-lon="-76.988855">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>01_AB_Proceres</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="02_AB_Espinar" data-lat="-12.114344" data-lon="-77.036921">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>02_AB_Espinar</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="03_AB_EjercitoBrasil" data-lat="-12.097006" data-lon="-77.071756">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>03_AB_EjercitoBrasil</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="04_AB_Bolognesi" data-lat="-12.060921" data-lon="-77.042050">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>04_AB_Bolognesi</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="05_AB_OvaloLaPaz" data-lat="-12.040389" data-lon="-76.998019">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>05_AB_OvaloLaPaz</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="06_AB_Ceres" data-lat="-12.030840" data-lon="-76.929611">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>06_AB_Ceres</span>
+                            </div>
+                        </div>
+                        <!-- Ruta BA -->
+                        <div class="text-xs font-medium text-primary px-2 mt-2">Ruta BA</div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="01_BA_Chucocaminoreal" data-lat="-12.041180" data-lon="-76.976033">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>01_BA_Chucocaminoreal</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="02_BA_Estaciongrau" data-lat="-12.054154" data-lon="-77.012864">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>02_BA_Estaciongrau</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="03_BA_EjercitoBrasil" data-lat="-12.097006" data-lon="-77.071756">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>03_BA_EjercitoBrasil</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="04_BA_Angamosaviacion" data-lat="-12.111845" data-lon="-77.000777">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>04_BA_Angamosaviacion</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="05_BA_Jorgechavez" data-lat="-12.142627" data-lon="-76.991186">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>05_BA_Jorgechavez</span>
+                            </div>
+                        </div>
+                        <div class="geofence-item cursor-pointer hover:bg-base-200 rounded px-2 py-1 text-sm" data-name="06_BA_Paradero" data-lat="-12.182013" data-lon="-77.000407">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span>06_BA_Paradero</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Leyenda de iconos -->
                 <div class="icon-legend">
                     <h3 class="text-sm font-bold mb-2">Leyenda de iconos</h3>
-                    <div class="legend-item">
-                        <div class="legend-icon legend-terminal-a" style="transform: rotate(0deg);"></div>
-                        <span class="text-xs">Terminal A (Ida) - Hacia arriba</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-icon legend-terminal-b" style="transform: rotate(180deg);"></div>
-                        <span class="text-xs">Terminal B (Vuelta) - Hacia abajo</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-icon legend-no-despacho"></div>
-                        <span class="text-xs">Sin despacho hoy</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-icon legend-default"></div>
-                        <span class="text-xs">En línea</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-icon legend-offline"></div>
-                        <span class="text-xs">Desconectado</span>
+                    <div class="flex flex-col gap-2">
+                        <div class="legend-item">
+                            <div class="legend-icon legend-terminal-a"></div>
+                            <span class="text-xs ml-2">Terminal A (Ida) - Hacia arriba</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon legend-terminal-b"></div>
+                            <span class="text-xs ml-2">Terminal B (Vuelta) - Hacia abajo</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon legend-no-despacho"></div>
+                            <span class="text-xs ml-2">Sin despacho hoy</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon legend-default"></div>
+                            <span class="text-xs ml-2">En línea</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon legend-offline"></div>
+                            <span class="text-xs ml-2">Desconectado</span>
+                        </div>
                     </div>
                 </div>
             </div>
